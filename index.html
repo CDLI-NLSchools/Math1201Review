@@ -588,14 +588,2204 @@ var UNIT_IND={
 var BANK=[];
 function E(id,unit,indicators,level,kind,gen){BANK.push({id:id,unit:unit,indicators:indicators,level:level,kind:kind,gen:gen});}
 /* BANK-SRC-BEGIN */
-/* Math 1201 Review bank source. Tranche 1 (Units 1 to 3) is assembled from
-   tranche1/unit1.js to unit3.js; tranche 2 (Units 4 to 7) follows in
-   tranche2/. FR returns the raw \frac fragment for use INSIDE math
-   delimiters (the Math 3201 chassis convention), defined here for the
-   entries that use it. CR_MARKS stays at the end of this file and must be
-   carried over verbatim at every assembly. */
+/* Math 1201 Review bank source. Tranche 1 (Units 1 to 3) assembled November
+   6, 2026 from tranche1/unit1.js to unit3.js; tranche 2 (Units 4 to 7)
+   follows from tranche2/. FR returns the raw \frac fragment for use
+   INSIDE math delimiters (the Math 3201 chassis convention), defined here
+   for the entries that use it. CR_MARKS stays at the end of this file and
+   must be carried over verbatim at every assembly. */
 function FR(n,d){return "\\frac{"+n+"}{"+d+"}";}
-var CR_MARKS={};
+
+/* Unit 1: Measurement (indicators 5.1 to 5.15, 6.1 to 6.4).
+   All scenarios and values are original. Helper prefix: u1. */
+
+function u1r1(n){return Math.round(n*10)/10;}
+function u1r2(n){return Math.round(n*100)/100;}
+function u1setOk(a){return (new Set(a.map(function(x){return String(x);})).size===a.length);}
+
+/* 1. Convert within one system */
+E("u1-convert-si",1,["6.1"],1,"gen",function(){
+  var modes=[
+    {from:"kilometres",to:"metres",f:1000,alts:[100,10000,10],dec:true,note:"1 kilometre = 1000 metres"},
+    {from:"metres",to:"centimetres",f:100,alts:[10,1000,10000],dec:true,note:"1 metre = 100 centimetres"},
+    {from:"centimetres",to:"millimetres",f:10,alts:[100,1000,2],dec:false,note:"1 centimetre = 10 millimetres"},
+    {from:"metres",to:"millimetres",f:1000,alts:[100,10,10000],dec:true,note:"1 metre = 1000 millimetres"},
+    {from:"centimetres",to:"metres",f:0.01,alts:[0.1,0.001,10],dec:false,note:"100 centimetres = 1 metre"},
+    {from:"millimetres",to:"centimetres",f:0.1,alts:[0.01,10,0.001],dec:false,note:"10 millimetres = 1 centimetre"},
+    {from:"feet",to:"inches",f:12,alts:[3,36,6],dec:false,note:"1 foot = 12 inches"},
+    {from:"yards",to:"feet",f:3,alts:[12,36,2],dec:false,note:"1 yard = 3 feet"},
+    {from:"yards",to:"inches",f:36,alts:[12,3,72],dec:false,note:"1 yard = 36 inches"}
+  ];
+  var m=pick(modes),v,ans,tries=0,ds;
+  do{
+    v=m.dec?ri(2,24)+pick([0,0.25,0.5,0.75]):ri(3,40);
+    if(m.f<1&&m.from==="centimetres")v=ri(2,40)*50;
+    if(m.f===0.1)v=ri(3,40)*10;
+    ans=u1r2(v*m.f);
+    ds=m.alts.map(function(a){return fmt(u1r2(v*a));});
+    tries++;
+  }while(!u1setOk([fmt(ans)].concat(ds))&&tries<80);
+  var sol="Use the fact that "+m.note+". Multiply or divide by the conversion factor: \\[ "+fmt(v)+" \\times "+fmt(m.f)+" = "+fmt(ans)+" \\] So the measure is <b>"+fmt(ans)+" "+m.to+"</b>.";
+  if(m.f<1)sol="Use the fact that "+m.note+". Divide by the number of smaller units in one larger unit: \\[ "+fmt(v)+" \\times "+fmt(m.f)+" = "+fmt(ans)+" \\] So the measure is <b>"+fmt(ans)+" "+m.to+"</b>.";
+  return mcq("Convert "+fmt(v)+" "+m.from+" to "+m.to+".",fmt(ans),ds,sol,{mode:m.from+"-"+m.to,v:v});
+});
+
+/* 2. Convert between systems, multiple choice with numeric options */
+E("u1-convert-between",1,["6.1","6.2"],2,"gen",function(){
+  var mode=ri(1,5),v,ans,ds,prompt,sol,tries=0;
+  do{
+    tries++;
+    if(mode===1){
+      v=ri(2,40)+pick([0,0.25,0.5,0.75]); ans=u1r2(v*2.54);
+      ds=[fmt(u1r2(v*2.5)),fmt(u1r2(v/2.54)),fmt(u1r2(v*25.4))];
+      prompt="A ribbon is "+fmt(v)+" inches long. Convert this length to centimetres. Use 1 inch = 2.54 centimetres. Give the length in centimetres.";
+      sol="Multiply by the conversion factor: \\[ \\begin{aligned} "+fmt(v)+" \\times 2.54 &= "+fmt(ans)+" \\end{aligned} \\] So the ribbon is <b>"+fmt(ans)+" centimetres</b> long.";
+    }else if(mode===2){
+      v=ri(10,60); ans=u1r2(v*0.3048);
+      ds=[fmt(u1r2(v*0.3)),fmt(u1r2(v*3.048)),fmt(u1r2(v*0.03048))];
+      prompt="An extension cable is "+v+" feet long. Convert this length to metres. Use 1 foot = 0.3048 metres. Give the length in metres.";
+      sol="Multiply by the conversion factor: \\[ \\begin{aligned} "+v+" \\times 0.3048 &= "+fmt(ans)+" \\end{aligned} \\] So the cable is <b>"+fmt(ans)+" metres</b> long.";
+    }else if(mode===3){
+      v=ri(2,90); ans=u1r1(v*1.6);
+      ds=[fmt(u1r1(v*0.16)),fmt(v*16),fmt(u1r1(v*2.6))];
+      prompt="A hiking trail is "+v+" miles long. Convert this length to kilometres. Use 1 mile = 1.6 kilometres. Give the length in kilometres.";
+      sol="Multiply by the conversion factor: \\[ \\begin{aligned} "+v+" \\times 1.6 &= "+fmt(ans)+" \\end{aligned} \\] So the trail is <b>"+fmt(ans)+" kilometres</b> long.";
+    }else if(mode===4){
+      v=ri(2,40); ans=u1r2(v*3.28);
+      ds=[fmt(u1r2(v*0.328)),fmt(u1r2(v*32.8)),fmt(u1r2(v*2.28))];
+      prompt="A rope is "+v+" metres long. Convert this length to feet. Use 1 metre = 3.28 feet. Give the length in feet.";
+      sol="Multiply by the conversion factor: \\[ \\begin{aligned} "+v+" \\times 3.28 &= "+fmt(ans)+" \\end{aligned} \\] So the rope is <b>"+fmt(ans)+" feet</b> long.";
+    }else{
+      var t=ri(2,30); v=u1r2(t*2.54); ans=t;
+      ds=[fmt(u1r2(v*2.54)),fmt(t/2),fmt(t*2)];
+      prompt="A photograph is "+fmt(v)+" centimetres wide. Convert this width to inches. Use 1 inch = 2.54 centimetres. Give the width in inches.";
+      sol="Divide by the conversion factor, since centimetres are the smaller unit here: \\[ \\begin{aligned} "+fmt(v)+" \\div 2.54 &= "+fmt(ans)+" \\end{aligned} \\] So the photograph is <b>"+fmt(ans)+" inches</b> wide.";
+    }
+  }while(!u1setOk([fmt(ans)].concat(ds))&&tries<80);
+  return mcq(prompt,fmt(ans),ds,sol,{mode:mode,v:v});
+});
+
+/* 3. Multistep conversions, numeric answer */
+E("u1-convert-multistep",1,["6.2"],2,"gen",function(){
+  var mode=ri(1,6);
+  if(mode===1){
+    var ft=ri(3,7),inch=ri(0,11),tot=ft*12+inch,ans=u1r2(tot*2.54);
+    return numq("A student is "+ft+" feet "+inch+" inches tall. Convert this height to centimetres. Use 1 inch = 2.54 centimetres.",ans,0.011,
+      "First change the whole height to inches, then convert: \\[ \\begin{aligned} "+ft+" \\times 12 + "+inch+" &= "+tot+" \\text{ inches} \\\\ "+tot+" \\times 2.54 &= "+fmt(ans)+" \\end{aligned} \\] So the height is <b>"+fmt(ans)+" centimetres</b>.",{mode:mode,ft:ft,inch:inch});
+  }
+  if(mode===2){
+    var yd=ri(2,20),f2=pick([1,2]),ans2=yd*36+f2*12;
+    return numq("A garden hose is "+yd+" yards "+f2+" feet long. Convert this length to inches.",ans2,0.011,
+      "Change each part to inches and add: \\[ \\begin{aligned} "+yd+" \\times 36 &= "+(yd*36)+" \\\\ "+f2+" \\times 12 &= "+(f2*12)+" \\\\ \\text{Total} &= "+ans2+" \\end{aligned} \\] So the hose is <b>"+ans2+" inches</b> long.",{mode:mode,yd:yd,f2:f2});
+  }
+  if(mode===3){
+    var yd3=ri(2,30),ans3=yd3*36;
+    return numq("A roll of fencing is "+yd3+" yards long. Convert this length to inches.",ans3,0.011,
+      "Work through feet as the middle step: \\[ \\begin{aligned} "+yd3+" \\times 3 &= "+(yd3*3)+" \\text{ feet} \\\\ "+(yd3*3)+" \\times 12 &= "+ans3+" \\end{aligned} \\] So the fencing is <b>"+ans3+" inches</b> long.",{mode:mode,yd:yd3});
+  }
+  if(mode===4){
+    var m4=ri(1,5),c4=pick([10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95]),ans4=m4*1000+c4*10;
+    return numq("A ribbon is "+m4+" metres "+c4+" centimetres long. Convert this length to millimetres.",ans4,0.011,
+      "Change each part to millimetres and add: \\[ \\begin{aligned} "+m4+" \\times 1000 &= "+(m4*1000)+" \\\\ "+c4+" \\times 10 &= "+(c4*10)+" \\\\ \\text{Total} &= "+ans4+" \\end{aligned} \\] So the ribbon is <b>"+ans4+" millimetres</b> long.",{mode:mode,m:m4,c:c4});
+  }
+  if(mode===5){
+    var km=ri(1,9),m5=pick([50,100,150,200,250,300,350,400,450,500,550,600,650,700,750,800,850,900]),ans5=km*1000+m5;
+    return numq("A cycling route is "+km+" kilometres "+m5+" metres long. Convert this length to metres.",ans5,0.011,
+      "Change the kilometres to metres and add: \\[ \\begin{aligned} "+km+" \\times 1000 + "+m5+" &= "+ans5+" \\end{aligned} \\] So the route is <b>"+ans5+" metres</b> long.",{mode:mode,km:km,m:m5});
+  }
+  var tt=ri(3,30),cm6=u1r2(tt*2.54);
+  return numq("A shelf board is "+fmt(cm6)+" centimetres long. Convert this length to inches. Use 1 inch = 2.54 centimetres.",tt,0.011,
+    "Divide by the conversion factor: \\[ \\begin{aligned} "+fmt(cm6)+" \\div 2.54 &= "+tt+" \\end{aligned} \\] So the board is <b>"+tt+" inches</b> long.",{mode:mode,t:tt});
+});
+
+/* 4. Unit analysis setups */
+E("u1-unit-analysis",1,["6.3"],2,"var",varset([
+  function(){return mcq("Which setup correctly converts 7.5 kilometres to metres?",
+    "7.5 km x (1000 m / 1 km)",
+    ["7.5 km x (1 km / 1000 m)","7.5 km x (100 m / 1 km)","7.5 km x (1 m / 1000 km)"],
+    "In the correct setup the kilometre units cancel and only metres remain, and the factor uses 1000 m = 1 km. The correct setup is <b>7.5 km x (1000 m / 1 km)</b>.",{});},
+  function(){return mcq("Which setup correctly converts 48 inches to feet?",
+    "48 in x (1 ft / 12 in)",
+    ["48 in x (12 in / 1 ft)","48 in x (1 ft / 36 in)","48 in x (12 ft / 1 in)"],
+    "In the correct setup the inch units cancel and only feet remain, and the factor uses 1 ft = 12 in. The correct setup is <b>48 in x (1 ft / 12 in)</b>.",{});},
+  function(){return mcq("Which setup correctly converts 250 centimetres to metres?",
+    "250 cm x (1 m / 100 cm)",
+    ["250 cm x (100 cm / 1 m)","250 cm x (1 m / 10 cm)","250 cm x (1000 m / 1 cm)"],
+    "In the correct setup the centimetre units cancel and only metres remain, and the factor uses 1 m = 100 cm. The correct setup is <b>250 cm x (1 m / 100 cm)</b>.",{});},
+  function(){return mcq("Which setup correctly converts 6 feet to inches?",
+    "6 ft x (12 in / 1 ft)",
+    ["6 ft x (1 ft / 12 in)","6 ft x (36 in / 1 ft)","6 ft x (1 in / 12 ft)"],
+    "In the correct setup the foot units cancel and only inches remain, and the factor uses 1 ft = 12 in. The correct setup is <b>6 ft x (12 in / 1 ft)</b>.",{});},
+  function(){return mcq("Which setup correctly converts 9 miles to kilometres? Use 1 mile = 1.6 kilometres.",
+    "9 mi x (1.6 km / 1 mi)",
+    ["9 mi x (1 mi / 1.6 km)","9 mi x (16 km / 1 mi)","9 mi x (1.6 mi / 1 km)"],
+    "In the correct setup the mile units cancel and only kilometres remain, and the factor uses 1 mi = 1.6 km. The correct setup is <b>9 mi x (1.6 km / 1 mi)</b>.",{});},
+  function(){return mcq("Which setup correctly converts 3.2 metres to centimetres?",
+    "3.2 m x (100 cm / 1 m)",
+    ["3.2 m x (1 m / 100 cm)","3.2 m x (10 cm / 1 m)","3.2 m x (100 m / 1 cm)"],
+    "In the correct setup the metre units cancel and only centimetres remain, and the factor uses 1 m = 100 cm. The correct setup is <b>3.2 m x (100 cm / 1 m)</b>.",{});},
+  function(){return mcq("A student writes 5 yd x (1 yd / 3 ft) to convert 5 yards to feet. Which statement describes this setup?",
+    "The units do not cancel to feet, and the factor is upside down",
+    ["The units cancel to feet, and the factor is written correctly","The units cancel to yards, and the factor is written correctly","The units do not cancel to feet, but the answer will still be feet"],
+    "The yard in the numerator cannot cancel the yards in the given measure, so the units do not reduce to feet, and the conversion factor is also upside down. The statement is <b>the units do not cancel to feet, and the factor is upside down</b>.",{});},
+  function(){return mcq("Which setup correctly converts 420 millimetres to centimetres?",
+    "420 mm x (1 cm / 10 mm)",
+    ["420 mm x (10 mm / 1 cm)","420 mm x (1 cm / 100 mm)","420 mm x (10 cm / 1 mm)"],
+    "In the correct setup the millimetre units cancel and only centimetres remain, and the factor uses 1 cm = 10 mm. The correct setup is <b>420 mm x (1 cm / 10 mm)</b>.",{});}
+]));
+
+/* 5. Reasonableness of a conversion, mental mathematics */
+E("u1-reasonable",1,["6.4"],3,"var",varset([
+  function(){return mcq("A runner says a 5 kilometre run is 500 metres long. Judge this conversion.",
+    "Not reasonable: 1 km is 1000 m, so 5 km should be 5000 m",
+    ["Reasonable: 1 km is 100 m, so 5 km should be 500 m","Not reasonable: 1 km is 100 m, so 5 km should be 50000 m","Reasonable: 1 km is 1000 m, so 5 km should be 500 m"],
+    "Mentally, 1 km = 1000 m, so 5 km = 5000 m. The claim of 500 m is ten times too small. It is <b>not reasonable: 1 km is 1000 m, so 5 km should be 5000 m</b>.",{});},
+  function(){return mcq("A ribbon 30 centimetres long is described as about 12 inches long. Judge this conversion. Use 1 inch = 2.54 centimetres.",
+    "Reasonable: 30 divided by about 2.5 is about 12",
+    ["Not reasonable: 30 divided by about 2.5 is about 12","Reasonable: 30 times about 2.5 is about 12","Not reasonable: 30 times about 2.5 is about 75"],
+    "Mentally, divide 30 by about 2.5 to get about 12, which matches the claim. It is <b>reasonable: 30 divided by about 2.5 is about 12</b>.",{});},
+  function(){return mcq("A student 180 centimetres tall is described as 18 feet tall. Judge this conversion.",
+    "Not reasonable: 180 cm is about 1.8 m, which is about 6 ft",
+    ["Reasonable: 180 cm is about 1.8 m, which is about 6 ft in height","Not reasonable: 180 cm is about 18 m, which is about 6 ft","Reasonable: 180 cm is about 18 m, which is about 60 ft"],
+    "Mentally, 180 cm is 1.8 m, and a person 1.8 m tall is about 6 ft tall, not 18 ft. It is <b>not reasonable: 180 cm is about 1.8 m, which is about 6 ft</b>.",{});},
+  function(){return mcq("A board 8 feet long is described as about 2.4 metres long. Judge this conversion.",
+    "Reasonable: 1 ft is about 0.3 m, so 8 ft is about 2.4 m",
+    ["Not reasonable: 1 ft is about 0.3 m, so 8 ft is about 2.4 m","Reasonable: 1 ft is about 3 m, so 8 ft is about 2.4 m","Not reasonable: 1 ft is about 3 m, so 8 ft is about 24 m"],
+    "Mentally, 1 ft is about 0.3 m, so 8 ft is about 2.4 m, which matches the claim. It is <b>reasonable: 1 ft is about 0.3 m, so 8 ft is about 2.4 m</b>.",{});},
+  function(){return mcq("A paperclip 3 centimetres long is described as 30 millimetres long. Judge this conversion.",
+    "Reasonable: 1 cm is 10 mm, so 3 cm should be 30 mm here",
+    ["Not reasonable: 1 cm is 10 mm, so 3 cm should be 30 mm","Reasonable: 1 cm is 100 mm, so 3 cm should be 30 mm","Not reasonable: 1 cm is 100 mm, so 3 cm should be 300 mm"],
+    "Mentally, 1 cm = 10 mm, so 3 cm = 30 mm, which matches the claim. It is <b>reasonable: 1 cm is 10 mm, so 3 cm should be 30 mm here</b>.",{});},
+  function(){return mcq("A drive of 100 kilometres is described as about 620 miles. Judge this conversion. Use 1 mile = 1.6 kilometres.",
+    "Not reasonable: 100 divided by 1.6 is about 62, not 620",
+    ["Reasonable: 100 divided by 1.6 is about 62, not 620","Not reasonable: 100 times 1.6 is about 160, not 620","Reasonable: 100 times 1.6 is about 620 miles, not 160 km at all"],
+    "Mentally, divide 100 by 1.6 to get about 62 miles. The claim of 620 miles is ten times too large. It is <b>not reasonable: 100 divided by 1.6 is about 62, not 620</b>.",{});},
+  function(){return mcq("A ribbon 45 centimetres wide is described as 4.5 metres wide. Judge this conversion.",
+    "Not reasonable: 45 cm is 0.45 m, since 100 cm make 1 m",
+    ["Reasonable: 45 cm is 0.45 m, since 100 cm make 1 m","Not reasonable: 45 cm is 4.5 m, since 10 cm make 1 m","Reasonable: 45 cm is 45 m, since 100 cm make up one full metre stick"],
+    "Mentally, 45 cm is a little under half of 100 cm, so it is 0.45 m, not 4.5 m. It is <b>not reasonable: 45 cm is 0.45 m, since 100 cm make 1 m</b>.",{});},
+  function(){return mcq("A yardstick 3 feet long is described as 36 inches long. Judge this conversion.",
+    "Reasonable: 1 ft is 12 in, so 3 ft should be 36 in",
+    ["Not reasonable: 1 ft is 12 in, so 3 ft should be 36 in","Reasonable: 1 ft is 36 in, so 3 ft should be 36 in","Not reasonable: 1 ft is 36 in, so 3 ft should be 108 in"],
+    "Mentally, 1 ft = 12 in, so 3 ft = 36 in, which matches the claim. It is <b>reasonable: 1 ft is 12 in, so 3 ft should be 36 in</b>.",{});}
+]));
+
+/* 6. Referents and comparing SI and imperial units */
+E("u1-referent",1,["5.10","5.11"],1,"var",varset([
+  function(){return mcq("Which unit is the best choice for measuring the length of a pencil?",
+    "centimetres",["millimetres","kilometres","metres"],
+    "A pencil is about 18 units long in centimetres, a manageable count. Millimetres give a large count for a hand object and metres and kilometres are far too large. The best unit is <b>centimetres</b>.",{});},
+  function(){return mcq("Which referent is closest to 1 millimetre?",
+    "the thickness of a dime",["the width of a fingernail","the height of a doorway","the length of a paperclip"],
+    "A dime is about 1 mm thick. A fingernail is about 1 cm wide, a paperclip is a few centimetres long, and a doorway is about 2 m high. The closest referent is <b>the thickness of a dime</b>.",{});},
+  function(){return mcq("Which unit is the best choice for measuring the distance between two towns?",
+    "kilometres",["centimetres","metres","millimetres"],
+    "Town to town distances run to tens or hundreds of kilometres, a manageable count. The smaller units would give enormous counts. The best unit is <b>kilometres</b>.",{});},
+  function(){return mcq("Which referent is closest to 1 centimetre?",
+    "the width of a fingernail",["the thickness of a dime","the height of a doorway","the length of a shoelace"],
+    "A fingernail is about 1 cm wide. A dime is about 1 mm thick, a doorway is about 2 m high, and a shoelace is close to a metre long. The closest referent is <b>the width of a fingernail</b>.",{});},
+  function(){return mcq("Which statement correctly compares 1 metre and 1 yard?",
+    "A metre is a little longer than a yard",["A yard is a little longer than a metre","A metre is exactly the same as a yard","A yard is about twice as long as a metre"],
+    "One metre is about 39 inches and one yard is 36 inches, so a metre is a little longer. The correct statement is <b>a metre is a little longer than a yard</b>.",{});},
+  function(){return mcq("Which statement correctly compares 1 kilometre and 1 mile?",
+    "A mile is longer than a kilometre",["A kilometre is longer than a mile","A mile is exactly the same as a kilometre","A kilometre is about twice as long as a mile"],
+    "One mile is about 1.6 kilometres, so a mile is longer. The correct statement is <b>a mile is longer than a kilometre</b>.",{});},
+  function(){return mcq("Which referent is closest to 1 inch?",
+    "the width of an adult thumb",["the width of a fingernail","the height of a doorway","the length of a paperclip"],
+    "An adult thumb is about 1 inch, or 2.54 cm, wide. A fingernail is about 1 cm wide, a paperclip is longer than an inch, and a doorway is about 2 m high. The closest referent is <b>the width of an adult thumb</b>.",{});},
+  function(){return mcq("Which unit is the best choice for measuring the height of a classroom ceiling?",
+    "metres",["centimetres","kilometres","millimetres"],
+    "A ceiling is a few metres high, a manageable count in metres. Centimetres and millimetres give large counts and kilometres are far too large. The best unit is <b>metres</b>.",{});},
+  function(){return mcq("Which referent is closest to 1 foot?",
+    "the length of a standard ruler",["the width of an adult thumb","the height of a doorway","the length of a shoelace"],
+    "A standard ruler is 12 inches, which is 1 foot. A thumb is about 1 inch wide, a doorway is about 2 m high, and a shoelace is close to a metre. The closest referent is <b>the length of a standard ruler</b>.",{});},
+  function(){return mcq("Which statement correctly compares a centimetre and an inch?",
+    "An inch is longer than a centimetre",["A centimetre is longer than an inch","An inch is exactly the same as a centimetre","A centimetre is about twice as long as an inch"],
+    "One inch is 2.54 centimetres, so an inch is longer. The correct statement is <b>an inch is longer than a centimetre</b>.",{});}
+]));
+
+/* 7. Estimate a length using a referent */
+E("u1-estimate",1,["5.12"],2,"var",varset([
+  function(){return mcq("A doorway is about 2 metres high. A classroom wall is about 4 doorway heights wide. Estimate the width of the wall, in metres.",
+    "8",["4","12","20"],
+    "Use the doorway as the referent and multiply the count by its height: \\[ 4 \\times 2 = 8 \\] The best estimate is <b>8 metres</b>.",{});},
+  function(){return mcq("A paperclip is about 3 centimetres long. A desk is about 20 paperclip lengths wide. Estimate the width of the desk, in centimetres.",
+    "60",["23","40","120"],
+    "Use the paperclip as the referent and multiply the count by its length: \\[ 20 \\times 3 = 60 \\] The best estimate is <b>60 centimetres</b>.",{});},
+  function(){return mcq("One long stride is about 1 metre. A hallway takes about 15 strides to walk. Estimate the length of the hallway, in metres.",
+    "15",["5","30","45"],
+    "Use the stride as the referent and multiply the count by its length: \\[ 15 \\times 1 = 15 \\] The best estimate is <b>15 metres</b>.",{});},
+  function(){return mcq("A student is about 1.8 metres tall. A tree is about 4 student heights tall. Estimate the height of the tree, in metres.",
+    "7.2",["3.6","5.4","10.8"],
+    "Use the student height as the referent and multiply: \\[ 4 \\times 1.8 = 7.2 \\] The best estimate is <b>7.2 metres</b>.",{});},
+  function(){return mcq("A thumb width is about 2 centimetres. A phone is about 7 thumb widths wide. Estimate the width of the phone, in centimetres.",
+    "14",["7","9","28"],
+    "Use the thumb width as the referent and multiply the count by its width: \\[ 7 \\times 2 = 14 \\] The best estimate is <b>14 centimetres</b>.",{});},
+  function(){return mcq("A car is about 4 metres long. A bus is about 3 car lengths long. Estimate the length of the bus, in metres.",
+    "12",["7","8","24"],
+    "Use the car as the referent and multiply the count by its length: \\[ 3 \\times 4 = 12 \\] The best estimate is <b>12 metres</b>.",{});},
+  function(){return mcq("A floor tile is about 30 centimetres wide. A kitchen floor is about 12 tiles wide. Estimate the width of the floor, in centimetres.",
+    "360",["42","180","720"],
+    "Use the tile as the referent and multiply the count by its width: \\[ 12 \\times 30 = 360 \\] The best estimate is <b>360 centimetres</b>.",{});},
+  function(){return mcq("A doorway is about 2 metres high. A school building is about 5 doorway heights tall. Estimate the height of the building, in metres.",
+    "10",["7","15","25"],
+    "Use the doorway as the referent and multiply the count by its height: \\[ 5 \\times 2 = 10 \\] The best estimate is <b>10 metres</b>.",{});}
+]));
+
+/* 8. Justify the choice of unit in a problem context */
+E("u1-justify-unit",1,["5.13"],3,"var",varset([
+  function(){return mcq("A town crew must record the length of a marathon course for a race permit. Which choice of unit is best justified?",
+    "Kilometres, because the course is long and the count stays manageable",
+    ["Millimetres, because the course is long and the count stays small","Centimetres, because the course is short and the count stays manageable","Metres only, because the course is short and no other unit can be used"],
+    "A marathon course is tens of kilometres long, so kilometres keep the count manageable while still describing the full distance. The best justified choice is <b>kilometres, because the course is long and the count stays manageable</b>.",{});},
+  function(){return mcq("A carpenter must record the thickness of a sheet of plywood for a cutting plan. Which choice of unit is best justified?",
+    "Millimetres, because the sheet is thin and small units show the detail",
+    ["Kilometres, because the sheet is thin and small units show the detail","Metres only, because the sheet is thick and large units show the detail","Centimetres, because the sheet is thin and no other unit can be used"],
+    "Plywood thickness is a small measure, so millimetres give a whole number count that shows the detail a cutting plan needs. The best justified choice is <b>millimetres, because the sheet is thin and small units show the detail</b>.",{});},
+  function(){return mcq("A nurse must record a student height for a health form. Which choice of unit is best justified?",
+    "Centimetres, because a height is moderate and the count is easy to read",
+    ["Kilometres, because a height is moderate and the count is easy to read","Millimetres, because a height is very large and the count is easy to read","Metres only, because a height is moderate and decimals are never allowed"],
+    "A student height is a moderate measure, and centimetres give a whole number count that is easy to read and compare. The best justified choice is <b>centimetres, because a height is moderate and the count is easy to read</b>.",{});},
+  function(){return mcq("A gardener must buy a hose that reaches across a backyard. Which choice of unit is best justified?",
+    "Metres, because the yard is moderate and the count is easy to handle too",
+    ["Millimetres, because the yard is moderate and the count is easy to handle","Kilometres, because the yard is very small and the count is easy to handle","Inches only, because the yard is moderate and no other unit can be used"],
+    "A backyard reach is a moderate measure of some metres, so metres keep the count easy to handle when choosing a hose. The best justified choice is <b>metres, because the yard is moderate and the count is easy to handle</b>.",{});},
+  function(){return mcq("A machinist must record the length of a small screw for a parts order. Which choice of unit is best justified?",
+    "Millimetres, because the screw is tiny and small units show the detail",
+    ["Centimetres, because the screw is tiny and small units show the detail","Metres only, because the screw is long and large units show the detail","Kilometres, because the screw is tiny and no other unit can be used"],
+    "A screw length is a tiny measure, so millimetres give a whole number count that shows the detail a parts order needs. The best justified choice is <b>millimetres, because the screw is tiny and small units show the detail</b>.",{});},
+  function(){return mcq("A coach must record the length of a running track for a meet schedule. Which choice of unit is best justified?",
+    "Metres, because the track is moderate and the count is standard for races",
+    ["Kilometres, because the track is moderate and the count is standard for races","Millimetres, because the track is very long and the count is standard for races","Centimetres, because the track is moderate and no other unit can be used"],
+    "A track lap is a moderate measure, and metres are the standard unit for race distances, keeping the count familiar. The best justified choice is <b>metres, because the track is moderate and the count is standard for races</b>.",{});},
+  function(){return mcq("A mover must record the width of a doorway to check whether a sofa fits. Which choice of unit is best justified?",
+    "Centimetres, because the width is under a metre and detail still counts",
+    ["Kilometres, because the width is under a metre and detail still matters","Metres only, because the width is very large and detail still matters","Millimetres, because the width is under a metre and no detail is needed"],
+    "A doorway width is under a metre, and centimetres give a precise whole number count for checking a fit. The best justified choice is <b>centimetres, because the width is under a metre and detail still matters</b>.",{});},
+  function(){return mcq("A driver must record the distance of a highway trip for a log book. Which choice of unit is best justified?",
+    "Kilometres, because the trip is long and the count stays manageable",
+    ["Centimetres, because the trip is long and the count stays manageable","Millimetres, because the trip is short and the count stays manageable","Metres only, because the trip is long and no other unit can be used"],
+    "A highway trip is a long distance, so kilometres keep the count manageable in a log book. The best justified choice is <b>kilometres, because the trip is long and the count stays manageable</b>.",{});}
+]));
+
+/* 9. Linear measure with instruments, multiple choice with numeric options */
+E("u1-linear-problem",1,["5.14"],2,"gen",function(){
+  var mode=ri(1,5),ans,ds,prompt,sol,tries=0,v1,v2;
+  do{
+    tries++;
+    if(mode===1){
+      v1=ri(5,24); var C=u1r1(Math.PI*v1); ans=v1;
+      ds=[fmt(v1/2),fmt(v1*2),fmt(v1+3)];
+      prompt="A tape measure wrapped around a circular jar reads "+fmt(C)+" centimetres. The reading is the circumference of the jar. Determine the diameter of the jar, in centimetres.";
+      sol="The diameter comes from the circumference formula: \\[ \\begin{aligned} d &= \\frac{C}{\\pi} \\\\ &= \\frac{"+fmt(C)+"}{\\pi} \\\\ &\\approx "+v1+" \\end{aligned} \\] So the diameter is <b>"+v1+" centimetres</b>.";
+    }else if(mode===2){
+      v1=ri(3,15); var C2=u1r1(2*Math.PI*v1); ans=v1;
+      ds=[fmt(v1*2),fmt(v1/2),fmt(v1+4)];
+      prompt="A tape measure wrapped around a tree trunk reads "+fmt(C2)+" centimetres. The reading is the circumference of the trunk. Determine the radius of the trunk, in centimetres.";
+      sol="The radius comes from the circumference formula: \\[ \\begin{aligned} r &= \\frac{C}{2\\pi} \\\\ &= \\frac{"+fmt(C2)+"}{2\\pi} \\\\ &\\approx "+v1+" \\end{aligned} \\] So the radius is <b>"+v1+" centimetres</b>.";
+    }else if(mode===3){
+      v1=ri(3,20); v2=ri(3,15); ans=2*(v1+v2);
+      ds=[fmt(v1+v2),fmt(v1*v2),fmt(2*v1+v2)];
+      prompt="A tape measure gives the length of a rectangular garden as "+v1+" metres and the width as "+v2+" metres. Determine the perimeter of the garden, in metres.";
+      sol="Add the length and width, then double: \\[ \\begin{aligned} P &= 2(l + w) \\\\ &= 2("+v1+" + "+v2+") \\\\ &= "+ans+" \\end{aligned} \\] So the perimeter is <b>"+ans+" metres</b>.";
+    }else if(mode===4){
+      v1=pick([10,20,25,50]); v2=pick([2,3,4,5]); var tot4=v1*v2/10; ans=v2/10;
+      ds=[fmt(tot4),fmt(v2),fmt(v2/100)];
+      prompt="A caliper measures a stack of "+v1+" identical sheets of card stock as "+fmt(tot4)+" millimetres thick in total. Determine the thickness of one sheet, in millimetres.";
+      sol="Divide the total thickness by the number of sheets: \\[ \\begin{aligned} \\frac{"+fmt(tot4)+"}{"+v1+"} &= "+fmt(ans)+" \\end{aligned} \\] So one sheet is <b>"+fmt(ans)+" millimetres</b> thick.";
+    }else{
+      v1=ri(15,80); v2=ri(3,8); ans=v1*v2;
+      ds=[fmt(v1+v2),fmt(v1*v2/2),fmt(v1*2)];
+      prompt="A measuring tape shows that one roll of ribbon is "+v1+" centimetres long. Determine the total length of "+v2+" identical rolls, in centimetres.";
+      sol="Multiply the length of one roll by the number of rolls: \\[ \\begin{aligned} "+v1+" \\times "+v2+" &= "+ans+" \\end{aligned} \\] So the total length is <b>"+ans+" centimetres</b>.";
+    }
+  }while(!u1setOk([fmt(ans)].concat(ds.map(function(x){return String(x);})))&&tries<80);
+  return mcq(prompt,fmt(ans),ds,sol,{mode:mode,v1:v1,v2:v2});
+});
+
+/* 10. Personal strategy for a hard-to-measure length */
+E("u1-strategy",1,["5.15"],3,"var",varset([
+  function(){return mcq("Which strategy best determines the circumference of a water bottle?",
+    "Wrap a string around the bottle, mark it, then measure the string flat out",
+    ["Measure straight across the bottle top, then report that as the distance","Wrap a string around the bottle, mark it, then weigh the string on a scale","Estimate the distance by eye, then report that as the measured distance"],
+    "A string can follow the curve around the bottle. Marking where it meets and measuring it flat against a ruler turns the curve into a straight length. The best strategy is to <b>wrap a string around the bottle, mark it, then measure the string flat</b>.",{});},
+  function(){return mcq("Which strategy best determines the length of a curved path on a map?",
+    "Lay a thread along the curve, then straighten it and measure the thread",
+    ["Draw a straight line between the ends, then measure that line on the map","Lay a thread along the curve, then count the colours printed on the map","Estimate the length by eye, then convert the guess using the map scale"],
+    "A thread can follow the curve. Straightening it and measuring it gives the curve length, which the map scale then converts. The best strategy is to <b>lay a thread along the curve, then straighten it and measure the thread</b>.",{});},
+  function(){return mcq("Which strategy best determines the perimeter of the base of an irregular planter?",
+    "Wrap a tape around the base, mark the join, then read the full tape length",
+    ["Measure the longest side of the base, then multiply that length by four","Wrap a tape around the base, mark the join, then read only half the length","Estimate each side by eye, then add the guesses and report the total sum"],
+    "A flexible tape can follow the irregular base all the way around, so the full reading at the join is the perimeter. The best strategy is to <b>wrap a tape around the base, mark the join, then read the full tape length</b>.",{});},
+  function(){return mcq("Which strategy best determines the diameter of a tree trunk too wide to measure across directly?",
+    "Measure the circumference with a tape, then divide that measure by pi",
+    ["Measure the circumference with a tape, then multiply that measure by pi","Measure the height of the trunk with a tape, then divide that by pi","Estimate the width by eye, then report that guess as the diameter"],
+    "The tape gives the circumference, and diameter is circumference divided by pi. The best strategy is to <b>measure the circumference with a tape, then divide that measure by pi</b>.",{});},
+  function(){return mcq("Which strategy best determines the length of a curved garden edge?",
+    "Lay a rope along the edge, mark its ends, then measure the rope straight out",
+    ["Measure the straight distance between the ends, then report it as the length","Lay a rope along the edge, mark its ends, then count the stones beside it","Estimate the length by pacing beside it, then report the pace count alone"],
+    "A rope can follow the curve. Measuring the marked rope laid straight gives the length of the edge. The best strategy is to <b>lay a rope along the edge, mark its ends, then measure the rope straight</b>.",{});},
+  function(){return mcq("Which strategy best determines the circumference of a round table top?",
+    "Wrap a tape around the edge, mark the join, then read the full tape length",
+    ["Measure straight across the centre, then report that as the distance around","Wrap a tape around the edge, mark the join, then read only a quarter length","Estimate the distance by eye, then report that as the measured distance"],
+    "A flexible tape follows the round edge all the way around, so the full reading at the join is the circumference. The best strategy is to <b>wrap a tape around the edge, mark the join, then read the full tape length</b>.",{});},
+  function(){return mcq("Which strategy best determines the length of a winding hallway on a floor plan?",
+    "Trace the path with a string on the plan, then measure the string and scale",
+    ["Draw a straight line between the doors, then measure that line and scale it","Trace the path with a string on the plan, then weigh the string and scale it","Estimate the length by eye on the plan, then report the guess as the length"],
+    "A string can trace the winding path on the plan. Measuring it and applying the plan scale gives the real length. The best strategy is to <b>trace the path with a string on the plan, then measure the string and scale it</b>.",{});},
+  function(){return mcq("Which strategy best determines the perimeter of an irregularly shaped sticker?",
+    "Press a thread around the outline, mark it, then measure the thread flat",
+    ["Measure the widest part of the sticker, then multiply that width by four","Press a thread around the outline, mark it, then measure only half of it","Estimate each part by eye, then add the guesses and report the total sum"],
+    "A thread can follow the irregular outline. Marking the join and measuring the thread flat gives the perimeter. The best strategy is to <b>press a thread around the outline, mark it, then measure the thread flat</b>.",{});}
+]));
+
+/* 11. Surface area of a basic solid, one mode describes a net (5.1) */
+E("u1-sa-basic",1,["5.1","5.2"],2,"gen",function(){
+  var mode=ri(1,6);
+  if(mode===1||mode===2){
+    var r=ri(3,10),h=ri(5,15),ans=u1r1(2*Math.PI*r*(r+h));
+    var prompt=mode===1?
+      "A closed cylindrical paint can has radius "+r+" cm and height "+h+" cm. Determine its total surface area. Give your answer to the nearest tenth, in square centimetres.":
+      "The net of a closed cylinder is a rectangle joined to two congruent circles. The circles have radius "+r+" cm, and the rectangle has height "+h+" cm and length equal to the circumference of a circle. Sketch the net in words and determine the total surface area of the cylinder. Give your answer to the nearest tenth, in square centimetres.";
+    return numq(prompt,ans,0.11,
+      "The surface area of a closed cylinder is the two circles plus the curved rectangle: \\[ \\begin{aligned} SA &= 2\\pi r^2 + 2\\pi r h \\\\ &= 2\\pi("+r+")^2 + 2\\pi("+r+")("+h+") \\\\ &\\approx "+fmt(ans)+" \\end{aligned} \\] So the surface area is <b>"+fmt(ans)+" square centimetres</b>.",{mode:mode,r:r,h:h});
+  }
+  if(mode===3){
+    var r3=ri(3,9),l3=r3+ri(2,7),ans3=u1r1(Math.PI*r3*(r3+l3));
+    return numq("A solid cone ornament has radius "+r3+" cm and slant height "+l3+" cm. Determine its total surface area. Give your answer to the nearest tenth, in square centimetres.",ans3,0.11,
+      "The surface area of a cone is the circular base plus the lateral area: \\[ \\begin{aligned} SA &= \\pi r^2 + \\pi r l \\\\ &= \\pi("+r3+")^2 + \\pi("+r3+")("+l3+") \\\\ &\\approx "+fmt(ans3)+" \\end{aligned} \\] So the surface area is <b>"+fmt(ans3)+" square centimetres</b>.",{mode:mode,r:r3,l:l3});
+  }
+  if(mode===4||mode===5){
+    var a=ri(3,12),b=ri(3,12),c=ri(3,12),ans4=2*(a*b+a*c+b*c);
+    var prompt4=mode===4?
+      "A closed rectangular storage box has length "+a+" cm, width "+b+" cm and height "+c+" cm. Determine its total surface area. Give your answer to the nearest tenth, in square centimetres.":
+      "The net of a closed rectangular prism is six rectangles in three congruent pairs, with dimensions "+a+" cm by "+b+" cm, "+a+" cm by "+c+" cm, and "+b+" cm by "+c+" cm. Sketch the net in words and determine the total surface area of the prism. Give your answer to the nearest tenth, in square centimetres.";
+    return numq(prompt4,ans4,0.11,
+      "Add the areas of the three pairs of congruent faces: \\[ \\begin{aligned} SA &= 2(lw + lh + wh) \\\\ &= 2("+a+"\\times"+b+" + "+a+"\\times"+c+" + "+b+"\\times"+c+") \\\\ &= "+ans4+" \\end{aligned} \\] So the surface area is <b>"+fmt(ans4)+" square centimetres</b>.",{mode:mode,a:a,b:b,c:c});
+  }
+  var s=ri(4,12),l6=s+ri(2,8),ans6=s*s+2*s*l6;
+  return numq("A square based pyramid paperweight has base side "+s+" cm and slant height "+l6+" cm. Determine its total surface area. Give your answer to the nearest tenth, in square centimetres.",ans6,0.11,
+    "The surface area is the square base plus four congruent triangular faces: \\[ \\begin{aligned} SA &= s^2 + 2sl \\\\ &= "+s+"^2 + 2("+s+")("+l6+") \\\\ &= "+ans6+" \\end{aligned} \\] So the surface area is <b>"+fmt(ans6)+" square centimetres</b>.",{mode:mode,s:s,l:l6});
+});
+
+/* 12. Unknown dimension from a surface area, one clean step */
+E("u1-sa-unknown",1,["5.3"],2,"gen",function(){
+  var mode=ri(1,4);
+  if(mode===1){
+    var r=ri(3,9),h=ri(4,14),SA=u1r1(2*Math.PI*r*(r+h));
+    return numq("A closed cylinder has radius "+r+" cm and total surface area "+fmt(SA)+" square centimetres. Determine its height. Give your answer to the nearest tenth, in centimetres.",h,0.11,
+      "Substitute into the surface area formula and solve for the height: \\[ \\begin{aligned} 2\\pi r(r + h) &= "+fmt(SA)+" \\\\ r + h &\\approx \\frac{"+fmt(SA)+"}{2\\pi("+r+")} \\\\ h &\\approx "+h+" \\end{aligned} \\] So the height is <b>"+h+" centimetres</b>.",{mode:mode,r:r});
+  }
+  if(mode===2){
+    var w=ri(3,9),h2=ri(3,9),l=ri(4,14),SA2=2*(l*w+l*h2+w*h2);
+    return numq("A closed rectangular box has width "+w+" cm, height "+h2+" cm and total surface area "+SA2+" square centimetres. Determine its length. Give your answer to the nearest tenth, in centimetres.",l,0.11,
+      "Substitute into the surface area formula and solve for the length: \\[ \\begin{aligned} 2(lw + lh + wh) &= "+SA2+" \\\\ l("+w+" + "+h2+") &= "+(SA2/2-w*h2)+" \\\\ l &= "+l+" \\end{aligned} \\] So the length is <b>"+l+" centimetres</b>.",{mode:mode,w:w,h:h2});
+  }
+  if(mode===3){
+    var l3=ri(6,14),r3=ri(3,8),LA=u1r1(Math.PI*r3*l3);
+    if(r3>=l3){r3=l3-3;}
+    LA=u1r1(Math.PI*r3*l3);
+    return numq("The lateral surface area of a cone is "+fmt(LA)+" square centimetres and its slant height is "+l3+" cm. Determine its radius. Give your answer to the nearest tenth, in centimetres.",r3,0.11,
+      "The lateral area is pi times radius times slant height, so divide: \\[ \\begin{aligned} r &= \\frac{LA}{\\pi l} \\\\ &\\approx \\frac{"+fmt(LA)+"}{\\pi("+l3+")} \\\\ &\\approx "+r3+" \\end{aligned} \\] So the radius is <b>"+r3+" centimetres</b>.",{mode:mode,l:l3});
+  }
+  var s=ri(4,12),l4=ri(5,14),SA4=s*s+2*s*l4;
+  return numq("A square based pyramid has base side "+s+" cm and total surface area "+SA4+" square centimetres. Determine its slant height. Give your answer to the nearest tenth, in centimetres.",l4,0.11,
+    "Subtract the base area, then divide by twice the base side: \\[ \\begin{aligned} 2sl &= "+SA4+" - "+s+"^2 \\\\ l &= \\frac{"+(SA4-s*s)+"}{2("+s+")} \\\\ &= "+l4+" \\end{aligned} \\] So the slant height is <b>"+l4+" centimetres</b>.",{mode:mode,s:s});
+});
+
+/* 13. Volume of a basic solid */
+E("u1-vol-basic",1,["5.4"],2,"gen",function(){
+  var mode=ri(1,5);
+  if(mode===1){
+    var r=ri(3,10),h=ri(5,16),ans=u1r1(Math.PI*r*r*h);
+    return numq("A cylindrical water tank has radius "+r+" cm and height "+h+" cm. Determine its volume. Give your answer to the nearest tenth, in cubic centimetres.",ans,0.11,
+      "The volume of a cylinder is base area times height: \\[ \\begin{aligned} V &= \\pi r^2 h \\\\ &= \\pi("+r+")^2("+h+") \\\\ &\\approx "+fmt(ans)+" \\end{aligned} \\] So the volume is <b>"+fmt(ans)+" cubic centimetres</b>.",{mode:mode,r:r,h:h});
+  }
+  if(mode===2){
+    var r2=ri(3,9),h2=pick([6,9,12,15]),ans2=u1r1(Math.PI*r2*r2*h2/3);
+    return numq("A cone shaped pile of sand has radius "+r2+" cm and height "+h2+" cm. Determine its volume. Give your answer to the nearest tenth, in cubic centimetres.",ans2,0.11,
+      "The volume of a cone is one third of base area times height: \\[ \\begin{aligned} V &= \\frac{1}{3}\\pi r^2 h \\\\ &= \\frac{1}{3}\\pi("+r2+")^2("+h2+") \\\\ &\\approx "+fmt(ans2)+" \\end{aligned} \\] So the volume is <b>"+fmt(ans2)+" cubic centimetres</b>.",{mode:mode,r:r2,h:h2});
+  }
+  if(mode===3){
+    var a=ri(3,14),b=ri(3,12),c=ri(3,12),ans3=a*b*c;
+    return numq("A rectangular storage crate has length "+a+" cm, width "+b+" cm and height "+c+" cm. Determine its volume. Give your answer to the nearest tenth, in cubic centimetres.",ans3,0.11,
+      "The volume of a rectangular prism is length times width times height: \\[ \\begin{aligned} V &= lwh \\\\ &= "+a+" \\times "+b+" \\times "+c+" \\\\ &= "+ans3+" \\end{aligned} \\] So the volume is <b>"+ans3+" cubic centimetres</b>.",{mode:mode,a:a,b:b,c:c});
+  }
+  if(mode===4){
+    var tb=pick([4,6,8,10,12]),th=pick([3,4,5,6]),L=ri(5,14),ans4=(tb*th/2)*L;
+    return numq("A tent is a triangular prism. Its triangular end has base "+tb+" cm and height "+th+" cm, and the prism is "+L+" cm long. Determine its volume. Give your answer to the nearest tenth, in cubic centimetres.",ans4,0.11,
+      "The volume is the area of the triangular end times the length: \\[ \\begin{aligned} V &= \\frac{1}{2}bh \\times L \\\\ &= \\frac{1}{2}("+tb+")("+th+") \\times "+L+" \\\\ &= "+ans4+" \\end{aligned} \\] So the volume is <b>"+fmt(ans4)+" cubic centimetres</b>.",{mode:mode,tb:tb,th:th,L:L});
+  }
+  var s=ri(4,12),h5=pick([3,6,9,12]),ans5=s*s*h5/3;
+  return numq("A square based pyramid ornament has base side "+s+" cm and height "+h5+" cm. Determine its volume. Give your answer to the nearest tenth, in cubic centimetres.",ans5,0.11,
+    "The volume of a pyramid is one third of base area times height: \\[ \\begin{aligned} V &= \\frac{1}{3}s^2 h \\\\ &= \\frac{1}{3}("+s+")^2("+h5+") \\\\ &= "+ans5+" \\end{aligned} \\] So the volume is <b>"+fmt(ans5)+" cubic centimetres</b>.",{mode:mode,s:s,h:h5});
+});
+
+/* 14. The one-third volume relation */
+E("u1-vol-relation",1,["5.5"],1,"gen",function(){
+  var mode=ri(1,4),small=ri(8,120),big=small*3,ans,ds,prompt,sol;
+  if(mode===1){
+    ans=small; ds=[fmt(big),fmt(big/2),fmt(big*3)];
+    prompt="A right cylinder has volume "+big+" cubic centimetres. A right cone has the same base and the same height as the cylinder. Determine the volume of the cone, in cubic centimetres.";
+    sol="A cone with the same base and height as a cylinder holds one third of the volume: \\[ \\begin{aligned} V &= \\frac{1}{3} \\times "+big+" \\\\ &= "+small+" \\end{aligned} \\] So the cone volume is <b>"+small+" cubic centimetres</b>.";
+  }else if(mode===2){
+    ans=big; ds=[fmt(small),fmt(small*2),fmt(u1r1(small/3))];
+    prompt="A right cone has volume "+small+" cubic centimetres. A right cylinder has the same base and the same height as the cone. Determine the volume of the cylinder, in cubic centimetres.";
+    sol="A cylinder holds three times the volume of a cone with the same base and height: \\[ \\begin{aligned} V &= 3 \\times "+small+" \\\\ &= "+big+" \\end{aligned} \\] So the cylinder volume is <b>"+big+" cubic centimetres</b>.";
+  }else if(mode===3){
+    ans=small; ds=[fmt(big),fmt(big/2),fmt(big*3)];
+    prompt="A right prism has volume "+big+" cubic centimetres. A right pyramid has the same base and the same height as the prism. Determine the volume of the pyramid, in cubic centimetres.";
+    sol="A pyramid with the same base and height as a prism holds one third of the volume: \\[ \\begin{aligned} V &= \\frac{1}{3} \\times "+big+" \\\\ &= "+small+" \\end{aligned} \\] So the pyramid volume is <b>"+small+" cubic centimetres</b>.";
+  }else{
+    ans=big; ds=[fmt(small),fmt(small*2),fmt(u1r1(small/3))];
+    prompt="A right pyramid has volume "+small+" cubic centimetres. A right prism has the same base and the same height as the pyramid. Determine the volume of the prism, in cubic centimetres.";
+    sol="A prism holds three times the volume of a pyramid with the same base and height: \\[ \\begin{aligned} V &= 3 \\times "+small+" \\\\ &= "+big+" \\end{aligned} \\] So the prism volume is <b>"+big+" cubic centimetres</b>.";
+  }
+  return mcq(prompt,fmt(ans),ds,sol,{mode:mode,small:small});
+});
+
+/* 15. Unknown dimension from a volume */
+E("u1-vol-unknown",1,["5.6"],2,"gen",function(){
+  var mode=ri(1,5);
+  if(mode===1){
+    var r=ri(3,9),h=ri(4,14),V=u1r1(Math.PI*r*r*h);
+    return numq("A cylinder has radius "+r+" cm and volume "+fmt(V)+" cubic centimetres. Determine its height. Give your answer to the nearest tenth, in centimetres.",h,0.11,
+      "Divide the volume by the base area: \\[ \\begin{aligned} h &= \\frac{V}{\\pi r^2} \\\\ &\\approx \\frac{"+fmt(V)+"}{\\pi("+r+")^2} \\\\ &\\approx "+h+" \\end{aligned} \\] So the height is <b>"+h+" centimetres</b>.",{mode:mode,r:r});
+  }
+  if(mode===2){
+    var r2=ri(3,10),h2=ri(4,12),V2=u1r1(Math.PI*r2*r2*h2);
+    return numq("A cylinder has height "+h2+" cm and volume "+fmt(V2)+" cubic centimetres. Determine its radius. Give your answer to the nearest tenth, in centimetres.",r2,0.11,
+      "Solve for the radius and take the square root: \\[ \\begin{aligned} r^2 &\\approx \\frac{"+fmt(V2)+"}{\\pi("+h2+")} \\\\ r &\\approx "+r2+" \\end{aligned} \\] So the radius is <b>"+r2+" centimetres</b>.",{mode:mode,h:h2});
+  }
+  if(mode===3){
+    var r3=ri(3,9),h3=ri(4,15),V3=u1r1(Math.PI*r3*r3*h3/3);
+    return numq("A cone has radius "+r3+" cm and volume "+fmt(V3)+" cubic centimetres. Determine its height. Give your answer to the nearest tenth, in centimetres.",h3,0.11,
+      "Multiply the volume by 3, then divide by the base area: \\[ \\begin{aligned} h &= \\frac{3V}{\\pi r^2} \\\\ &\\approx \\frac{3("+fmt(V3)+")}{\\pi("+r3+")^2} \\\\ &\\approx "+h3+" \\end{aligned} \\] So the height is <b>"+h3+" centimetres</b>.",{mode:mode,r:r3});
+  }
+  if(mode===4){
+    var a=ri(3,10),b=ri(3,10),c=ri(3,12),V4=a*b*c;
+    return numq("A rectangular box has length "+a+" cm, width "+b+" cm and volume "+V4+" cubic centimetres. Determine its height. Give your answer to the nearest tenth, in centimetres.",c,0.11,
+      "Divide the volume by the area of the base: \\[ \\begin{aligned} h &= \\frac{"+V4+"}{"+a+" \\times "+b+"} \\\\ &= "+c+" \\end{aligned} \\] So the height is <b>"+c+" centimetres</b>.",{mode:mode,a:a,b:b});
+  }
+  var s=ri(3,9),h5=ri(3,12),V5=s*s*h5/3;
+  if(V5!==Math.floor(V5)){h5=h5*3; V5=s*s*h5/3;}
+  return numq("A square based pyramid has base side "+s+" cm and volume "+fmt(V5)+" cubic centimetres. Determine its height. Give your answer to the nearest tenth, in centimetres.",h5,0.11,
+    "Multiply the volume by 3, then divide by the base area: \\[ \\begin{aligned} h &= \\frac{3V}{s^2} \\\\ &= \\frac{3("+fmt(V5)+")}{"+s+"^2} \\\\ &= "+h5+" \\end{aligned} \\] So the height is <b>"+h5+" centimetres</b>.",{mode:mode,s:s});
+});
+
+/* 16. Sphere surface area and volume, and radius from surface area */
+E("u1-sphere",1,["5.7","5.8"],2,"gen",function(){
+  var mode=ri(1,6),prof=pick([
+    {name:"spherical garden ornament",lo:3,hi:12},
+    {name:"globe",lo:10,hi:20},
+    {name:"marble",lo:1,hi:3},
+    {name:"spherical water tank",lo:8,hi:18},
+    {name:"spherical exercise ball",lo:15,hi:35},
+    {name:"beach ball",lo:12,hi:24}
+  ]);
+  var r=ri(prof.lo,prof.hi);
+  if(mode===1){
+    var ans=u1r1(4*Math.PI*r*r);
+    return numq("A "+prof.name+" has radius "+r+" cm. Determine its surface area. Give your answer to the nearest tenth, in square centimetres.",ans,0.11,
+      "The surface area of a sphere is four pi times radius squared: \\[ \\begin{aligned} SA &= 4\\pi r^2 \\\\ &= 4\\pi("+r+")^2 \\\\ &\\approx "+fmt(ans)+" \\end{aligned} \\] So the surface area is <b>"+fmt(ans)+" square centimetres</b>.",{mode:mode,r:r,prof:prof.name});
+  }
+  if(mode===2){
+    var ans2=u1r1(4*Math.PI*r*r*r/3);
+    return numq("A "+prof.name+" has radius "+r+" cm. Determine its volume. Give your answer to the nearest tenth, in cubic centimetres.",ans2,0.11,
+      "The volume of a sphere is four thirds pi times radius cubed: \\[ \\begin{aligned} V &= \\frac{4}{3}\\pi r^3 \\\\ &= \\frac{4}{3}\\pi("+r+")^3 \\\\ &\\approx "+fmt(ans2)+" \\end{aligned} \\] So the volume is <b>"+fmt(ans2)+" cubic centimetres</b>.",{mode:mode,r:r,prof:prof.name});
+  }
+  if(mode===3){
+    var d=r*2,ans3=u1r1(4*Math.PI*r*r);
+    return numq("A "+prof.name+" has diameter "+d+" cm. Determine its surface area. Give your answer to the nearest tenth, in square centimetres.",ans3,0.11,
+      "Halve the diameter to get the radius, then use the sphere formula: \\[ \\begin{aligned} r &= "+d+" \\div 2 = "+r+" \\\\ SA &= 4\\pi("+r+")^2 \\\\ &\\approx "+fmt(ans3)+" \\end{aligned} \\] So the surface area is <b>"+fmt(ans3)+" square centimetres</b>.",{mode:mode,r:r,prof:prof.name});
+  }
+  if(mode===4){
+    var d4=r*2,ans4=u1r1(4*Math.PI*r*r*r/3);
+    return numq("A "+prof.name+" has diameter "+d4+" cm. Determine its volume. Give your answer to the nearest tenth, in cubic centimetres.",ans4,0.11,
+      "Halve the diameter to get the radius, then use the sphere formula: \\[ \\begin{aligned} r &= "+d4+" \\div 2 = "+r+" \\\\ V &= \\frac{4}{3}\\pi("+r+")^3 \\\\ &\\approx "+fmt(ans4)+" \\end{aligned} \\] So the volume is <b>"+fmt(ans4)+" cubic centimetres</b>.",{mode:mode,r:r,prof:prof.name});
+  }
+  if(mode===5){
+    var SA5=u1r1(4*Math.PI*r*r);
+    return numq("A sphere has surface area "+fmt(SA5)+" square centimetres. Determine its radius. Give your answer to the nearest tenth, in centimetres.",r,0.11,
+      "Solve the surface area formula for the radius: \\[ \\begin{aligned} r^2 &= \\frac{"+fmt(SA5)+"}{4\\pi} \\\\ r &\\approx "+r+" \\end{aligned} \\] So the radius is <b>"+r+" centimetres</b>.",{mode:mode,r:r,prof:prof.name});
+  }
+  var SA6=u1r1(4*Math.PI*r*r);
+  return numq("A sphere has surface area "+fmt(SA6)+" square centimetres. Determine its diameter. Give your answer to the nearest tenth, in centimetres.",r*2,0.11,
+    "First find the radius from the surface area, then double it: \\[ \\begin{aligned} r^2 &= \\frac{"+fmt(SA6)+"}{4\\pi} \\\\ r &\\approx "+r+" \\\\ d &= 2("+r+") = "+(r*2)+" \\end{aligned} \\] So the diameter is <b>"+(r*2)+" centimetres</b>.",{mode:mode,r:r,prof:prof.name});
+});
+
+/* 17. Composite volume, the decomposition is the decision */
+E("u1-composite",1,["5.9"],3,"gen",function(){
+  var mode=ri(1,4);
+  if(mode===1){
+    var r=ri(3,8),h=ri(6,14),ans=u1r1(Math.PI*r*r*h+2*Math.PI*r*r*r/3);
+    return numq("A storage silo is a cylinder with a hemispherical top. The cylinder has radius "+r+" cm and height "+h+" cm, and the hemisphere has the same radius. Determine the total volume of the silo. Give your answer to the nearest tenth, in cubic centimetres.",ans,0.11,
+      "Split the solid into a cylinder plus a hemisphere, which is half a sphere: \\[ \\begin{aligned} V &= \\pi r^2 h + \\frac{2}{3}\\pi r^3 \\\\ &= \\pi("+r+")^2("+h+") + \\frac{2}{3}\\pi("+r+")^3 \\\\ &\\approx "+fmt(ans)+" \\end{aligned} \\] So the total volume is <b>"+fmt(ans)+" cubic centimetres</b>.",{mode:mode,r:r,h:h});
+  }
+  if(mode===2){
+    var a=ri(4,10),b=ri(3,8),hp=ri(4,10),hq=ri(3,8),ans2=a*b*hp+(a*b*hq)/3;
+    if(ans2!==Math.floor(ans2))hq=hq*3,ans2=a*b*hp+(a*b*hq)/3;
+    return numq("A storage building is a rectangular prism with a pyramid roof. The prism has length "+a+" cm, width "+b+" cm and height "+hp+" cm. The pyramid has the same length and width as its base and height "+hq+" cm. Determine the total volume of the building. Give your answer to the nearest tenth, in cubic centimetres.",u1r1(ans2),0.11,
+      "Split the solid into a prism plus a pyramid on the same base: \\[ \\begin{aligned} V &= lwh + \\frac{1}{3}lwH \\\\ &= "+a+"\\times"+b+"\\times"+hp+" + \\frac{1}{3}("+a+"\\times"+b+")("+hq+") \\\\ &= "+fmt(u1r1(ans2))+" \\end{aligned} \\] So the total volume is <b>"+fmt(u1r1(ans2))+" cubic centimetres</b>.",{mode:mode,a:a,b:b,hp:hp,hq:hq});
+  }
+  if(mode===3){
+    var r3=ri(3,8),H=ri(8,15),hc=pick([3,6]),ans3=u1r1(Math.PI*r3*r3*H-Math.PI*r3*r3*hc/3);
+    return numq("A cylindrical block has radius "+r3+" cm and height "+H+" cm. A cone shaped hole with the same radius and height "+hc+" cm is removed from the block. Determine the volume that remains. Give your answer to the nearest tenth, in cubic centimetres.",ans3,0.11,
+      "Subtract the removed cone from the full cylinder: \\[ \\begin{aligned} V &= \\pi r^2 H - \\frac{1}{3}\\pi r^2 h \\\\ &= \\pi("+r3+")^2("+H+") - \\frac{1}{3}\\pi("+r3+")^2("+hc+") \\\\ &\\approx "+fmt(ans3)+" \\end{aligned} \\] So the remaining volume is <b>"+fmt(ans3)+" cubic centimetres</b>.",{mode:mode,r:r3,H:H,hc:hc});
+  }
+  var r4=ri(3,7),h4=pick([6,9,12]),ans4=u1r1(Math.PI*r4*r4*h4/3+2*Math.PI*r4*r4*r4/3);
+  return numq("A treat is a cone topped with a hemispherical scoop. The cone has radius "+r4+" cm and height "+h4+" cm, and the hemisphere has the same radius. Determine the total volume of the treat. Give your answer to the nearest tenth, in cubic centimetres.",ans4,0.11,
+    "Split the solid into a cone plus a hemisphere, which is half a sphere: \\[ \\begin{aligned} V &= \\frac{1}{3}\\pi r^2 h + \\frac{2}{3}\\pi r^3 \\\\ &= \\frac{1}{3}\\pi("+r4+")^2("+h4+") + \\frac{2}{3}\\pi("+r4+")^3 \\\\ &\\approx "+fmt(ans4)+" \\end{aligned} \\] So the total volume is <b>"+fmt(ans4)+" cubic centimetres</b>.",{mode:mode,r:r4,h:h4});
+});
+
+/* 18. Read an instrument scale */
+E("u1-read-instrument",1,["5.14"],1,"var",varset([
+  function(){return mcq("On a centimetre ruler, the end of a ribbon lines up with the third millimetre tick after the 7 centimetre mark. Determine the length of the ribbon, in centimetres.",
+    "7.3",["7","7.03","10"],
+    "Each millimetre tick is 0.1 cm, so three ticks past 7 cm add 0.3 cm: \\[ 7 + 0.3 = 7.3 \\] The length is <b>7.3 centimetres</b>.",{});},
+  function(){return mcq("A caliper scale reads 24 millimetres for the diameter of a bolt. Which reading, in centimetres, matches the caliper?",
+    "2.4",["0.24","24","240"],
+    "Divide millimetres by 10 to get centimetres: \\[ 24 \\div 10 = 2.4 \\] The matching reading is <b>2.4 centimetres</b>.",{});},
+  function(){return mcq("On a tape measure, a board ends at the 1 metre mark plus 24 centimetres more. Determine the length of the board, in centimetres.",
+    "124",["24","100","125"],
+    "Change the metre to centimetres and add: \\[ 100 + 24 = 124 \\] The length is <b>124 centimetres</b>.",{});},
+  function(){return mcq("On an inch ruler divided into quarter inches, the end of a card lines up with the second quarter tick after the 3 inch mark. Determine the length of the card, in inches.",
+    "3.5",["3.25","3.75","5"],
+    "Two quarter ticks make one half inch past the 3 inch mark: \\[ 3 + 0.5 = 3.5 \\] The length is <b>3.5 inches</b>.",{});},
+  function(){return mcq("A length is given as 68 millimetres. Which caliper reading, in centimetres, shows the same length?",
+    "6.8",["0.68","68","680"],
+    "Divide millimetres by 10 to get centimetres: \\[ 68 \\div 10 = 6.8 \\] The matching reading is <b>6.8 centimetres</b>.",{});},
+  function(){return mcq("On a metre stick, the end of a cord lines up with the 47 centimetre mark. Determine the length of the cord, in metres.",
+    "0.47",["0.047","4.7","47"],
+    "Divide centimetres by 100 to get metres: \\[ 47 \\div 100 = 0.47 \\] The length is <b>0.47 metres</b>.",{});},
+  function(){return mcq("A caliper scale reads 12.5 millimetres for the thickness of a washer. Determine the thickness, in millimetres.",
+    "12.5",["1.25","12","125"],
+    "The scale already reads in millimetres, so the reading is taken directly. The thickness is <b>12.5 millimetres</b>.",{});},
+  function(){return mcq("A strip of paper starts at the 2 centimetre mark of a ruler and ends at the 9 centimetre mark. Determine the length of the strip, in centimetres.",
+    "7",["9","11","18"],
+    "Subtract the starting mark from the ending mark, since the strip does not start at zero: \\[ 9 - 2 = 7 \\] The length is <b>7 centimetres</b>.",{});},
+  function(){return mcq("A ribbon starts at the 1 inch mark of a ruler and ends at the 4.5 inch mark. Determine the length of the ribbon, in inches.",
+    "3.5",["4.5","5","5.5"],
+    "Subtract the starting mark from the ending mark, since the ribbon does not start at zero: \\[ 4.5 - 1 = 3.5 \\] The length is <b>3.5 inches</b>.",{});},
+  function(){return mcq("On a centimetre ruler, a screw lines up from the 0 mark to the sixth millimetre tick after the 4 centimetre mark. Determine the length of the screw, in centimetres.",
+    "4.6",["4.06","5","10"],
+    "Each millimetre tick is 0.1 cm, so six ticks past 4 cm add 0.6 cm: \\[ 4 + 0.6 = 4.6 \\] The length is <b>4.6 centimetres</b>.",{});}
+]));
+
+/* 19. Composite surface area, deciding which surfaces count */
+E("u1-composite-sa",1,["5.9"],3,"gen",function(){
+  var mode=ri(1,4);
+  if(mode===1){
+    var r=ri(3,8),h=ri(6,14),ans=u1r1(2*Math.PI*r*h+2*Math.PI*r*r);
+    return numq("A silo is a cylinder with a hemispherical top. The cylinder has radius "+r+" cm and height "+h+" cm, and the hemisphere has the same radius. The silo sits on the ground and is painted on all outside surfaces except the bottom. Determine the area painted. Give your answer to the nearest tenth, in square centimetres.",ans,0.11,
+      "Only the curved wall of the cylinder and the curved surface of the hemisphere are painted. The flat circle where they join is inside the silo, and the bottom is not painted: \\[ \\begin{aligned} SA &= 2\\pi r h + 2\\pi r^2 \\\\ &= 2\\pi("+r+")("+h+") + 2\\pi("+r+")^2 \\\\ &\\approx "+fmt(ans)+" \\end{aligned} \\] So the area painted is <b>"+fmt(ans)+" square centimetres</b>.",{mode:mode,r:r,h:h});
+  }
+  if(mode===2){
+    var s=ri(4,10),hp=ri(3,9),l=ri(5,12),ans2=s*s+4*s*hp+2*s*l;
+    return numq("A solid ornament is a square prism with a square pyramid on top. The prism has base side "+s+" cm and height "+hp+" cm. The pyramid has the same base side and slant height "+l+" cm. Determine the total surface area of the solid. Give your answer to the nearest tenth, in square centimetres.",ans2,0.11,
+      "Count the bottom and the four walls of the prism plus the four triangular faces of the pyramid. The top face of the prism is covered by the pyramid, and the base of the pyramid is inside the solid, so neither is counted: \\[ \\begin{aligned} SA &= s^2 + 4sh + 2sl \\\\ &= "+s+"^2 + 4("+s+")("+hp+") + 2("+s+")("+l+") \\\\ &= "+ans2+" \\end{aligned} \\] So the total surface area is <b>"+ans2+" square centimetres</b>.",{mode:mode,s:s,hp:hp,l:l});
+  }
+  if(mode===3){
+    var r3=ri(3,9),h3=ri(5,13),ans3=u1r1(Math.PI*r3*r3+2*Math.PI*r3*h3);
+    return numq("An open top cylindrical bin has radius "+r3+" cm and height "+h3+" cm. Sheet metal is used for the bottom and the curved side only. Determine the area of sheet metal used. Give your answer to the nearest tenth, in square centimetres.",ans3,0.11,
+      "Count the circular bottom plus the curved side. There is no lid, so no top circle is counted: \\[ \\begin{aligned} SA &= \\pi r^2 + 2\\pi r h \\\\ &= \\pi("+r3+")^2 + 2\\pi("+r3+")("+h3+") \\\\ &\\approx "+fmt(ans3)+" \\end{aligned} \\] So the area used is <b>"+fmt(ans3)+" square centimetres</b>.",{mode:mode,r:r3,h:h3});
+  }
+  var r4=ri(3,8),h4=ri(5,12),l4=r4+ri(3,7),ans4=u1r1(Math.PI*r4*r4+2*Math.PI*r4*h4+Math.PI*r4*l4);
+  return numq("A solid tower ornament is a cylinder with a cone roof on top. The cylinder has radius "+r4+" cm and height "+h4+" cm. The cone has the same radius and slant height "+l4+" cm. Determine the total surface area of the solid. Give your answer to the nearest tenth, in square centimetres.",ans4,0.11,
+    "Count the bottom circle and curved wall of the cylinder plus the lateral area of the cone. The top circle of the cylinder is covered by the cone, and the base of the cone is inside the solid, so neither is counted: \\[ \\begin{aligned} SA &= \\pi r^2 + 2\\pi r h + \\pi r l \\\\ &= \\pi("+r4+")^2 + 2\\pi("+r4+")("+h4+") + \\pi("+r4+")("+l4+") \\\\ &\\approx "+fmt(ans4)+" \\end{aligned} \\] So the total surface area is <b>"+fmt(ans4)+" square centimetres</b>.",{mode:mode,r:r4,h:h4,l:l4});
+});
+/* Math 1201 Review, Unit 2: Roots and Powers (tranche 1).
+   All scenarios and numbers are original to this bank; sources gave types only.
+   Helper prefix: u2. Every entry returns the same question type on every draw. */
+
+/* ================= u2 helpers ================= */
+function u2gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){var t=a%b;a=b;b=t;}return a||1;}
+function u2lcm(a,b){return a/u2gcd(a,b)*b;}
+function u2red(n,d){var g=u2gcd(n,d);n/=g;d/=g;if(d<0){n=-n;d=-d;}return [n,d];}
+function u2fracS(n,d){var r=u2red(n,d);if(r[1]===1)return ""+r[0];return FR(r[0],r[1]);}
+function u2radS(idx,rad){return idx===2?("\\sqrt{"+rad+"}"):("\\sqrt["+idx+"]{"+rad+"}");}
+function u2isSq(n){var r=Math.round(Math.sqrt(n));return r*r===n;}
+function u2isCu(n){var r=Math.round(Math.cbrt(n));return r*r*r===n;}
+function u2isPrime(n){if(n<2)return false;for(var p=2;p*p<=n;p++){if(n%p===0)return false;}return true;}
+function u2facMap(n){var m={},x=n,p=2;while(p*p<=x){while(x%p===0){m[p]=(m[p]||0)+1;x/=p;}p++;}if(x>1)m[x]=(m[x]||0)+1;return m;}
+function u2mapStr(m){return Object.keys(m).map(function(p){return m[p]>1?p+"^"+m[p]:p;}).join(" \\times ");}
+function u2facStr(n){return u2mapStr(u2facMap(n));}
+function u2facList(n){var m=u2facMap(n),out=[];Object.keys(m).forEach(function(p){for(var i=0;i<m[p];i++)out.push(+p);});return out;}
+function u2pickD3(ans,cands){
+  var out=[],seen={};seen[ans]=1;
+  for(var i=0;i<cands.length&&out.length<3;i++){var c=cands[i];if(typeof c==="number"&&isFinite(c)&&c!==ans&&!seen[c]){seen[c]=1;out.push(c);}}
+  var k=2;while(out.length<3){var c2=ans+k;k++;if(!seen[c2]){seen[c2]=1;out.push(c2);}}
+  return out;
+}
+function u2pickS3(ans,cands){
+  var out=[],seen={};seen[ans]=1;
+  for(var i=0;i<cands.length&&out.length<3;i++){var c=cands[i];if(typeof c==="string"&&c!==ans&&!seen[c]){seen[c]=1;out.push(c);}}
+  return out;
+}
+function u2cloneMap(m){var o={};Object.keys(m).forEach(function(k){o[k]=m[k];});return o;}
+function u2nextPrime(p){var q=p+1;while(!u2isPrime(q))q++;return q;}
+
+/* ================= 1. prime factorization (1.12, L1) ================= */
+E("u2-prime-factor",2,["1.12"],1,"gen",function(){
+  var n=ri(24,600),t=0;
+  while((u2isPrime(n)||n<24)&&t<200){n=ri(24,600);t++;}
+  var mode=ri(1,3),fm=u2facMap(n),list=u2facList(n);
+  var primes=Object.keys(fm).map(Number);
+  var expanded=list.join(" \\times ");
+  var solSteps="Divide out prime factors one at a time until the quotient is \\(1\\). This gives \\["+
+    "\\begin{aligned} "+n+" &= "+expanded+" \\\\ &= "+u2facStr(n)+" \\end{aligned} \\]";
+  if(mode===1){
+    var correct="\\("+u2facStr(n)+"\\)";
+    var m1=u2cloneMap(fm);m1[primes[0]]=m1[primes[0]]+1;
+    var m2=u2cloneMap(fm);var lp=primes[primes.length-1];
+    if(m2[lp]>1){m2[lp]=m2[lp]-1;}else{delete m2[lp];m2[u2nextPrime(lp)]=1;}
+    if(Object.keys(m2).length===0){m2[2]=1;m2[3]=1;}
+    var m3=u2cloneMap(fm);var sp=primes[0];if(m3[sp]>1){m3[sp]=m3[sp]-1;}else{delete m3[sp];}
+    var np=u2nextPrime(sp);m3[np]=(m3[np]||0)+1;
+    var ds=u2pickS3(correct,["\\("+u2mapStr(m1)+"\\)","\\("+u2mapStr(m2)+"\\)","\\("+u2mapStr(m3)+"\\)",
+      "\\("+u2mapStr(m1).replace(/ \\times /," \\times ")+"\\)"]);
+    return mcq("What is the <b>prime factorization</b> of \\("+n+"\\)?",
+      correct,ds,
+      solSteps+" The prime factorization is <b>\\("+u2facStr(n)+"\\)</b>.",
+      {n:n,mode:mode});
+  }
+  if(mode===2){
+    var correct2="\\("+expanded+"\\)";
+    var l1=list.slice();l1.splice(0,2,""+(list[0]*list[1]));
+    var l2=list.slice(0,list.length-1);
+    var l3=list.slice();l3[l3.length-1]=u2nextPrime(list[list.length-1]);
+    var ds2=u2pickS3(correct2,["\\("+l1.join(" \\times ")+"\\)","\\("+l2.join(" \\times ")+"\\)","\\("+l3.join(" \\times ")+"\\)"]);
+    return mcq("Which product of primes is equal to \\("+n+"\\)?",
+      correct2,ds2,
+      solSteps+" Written as a product of primes with no exponents, the value is <b>\\("+expanded+"\\)</b>. Each factor in the product must be prime, and no factor may be dropped or changed.",
+      {n:n,mode:mode});
+  }
+  var correct3="\\(\\{"+list.join(", ")+"\\}\\)";
+  var l1b=list.slice();l1b.splice(0,2,""+(list[0]*list[1]));
+  var l2b=list.slice(0,list.length-1);
+  var l3b=list.slice();l3b.push(list[0]);
+  var ds3=u2pickS3(correct3,["\\(\\{"+l1b.join(", ")+"\\}\\)","\\(\\{"+l2b.join(", ")+"\\}\\)","\\(\\{"+l3b.join(", ")+"\\}\\)"]);
+  return mcq("Which list gives <b>all</b> the prime factors of \\("+n+"\\), with repetition?",
+    correct3,ds3,
+    solSteps+" Listing each prime as many times as it occurs gives <b>\\(\\{"+list.join(", ")+"\\}\\)</b>.",
+    {n:n,mode:mode});
+});
+
+/* ================= 2. why 0 and 1 have no prime factors (1.13, L1, var) ================= */
+E("u2-zero-one",2,["1.13"],1,"var",varset([
+  function(){var key="Its only positive divisor is \\(1\\), and \\(1\\) is not a prime number, so it has no prime divisor";
+    return mcq("Why does the number \\(1\\) have no prime factors?",
+    key,
+    ["It is an odd number, and prime factors are only ever listed for numbers that are even",
+     "It has too many divisors to list them all, so its prime factors are left out of the list entirely",
+     "It is a perfect square, and perfect squares are not broken into prime factors at all"],
+    "A prime factor of a number is a divisor of that number which is itself prime. The only positive divisor of \\(1\\) is \\(1\\), and \\(1\\) is not prime, because a prime has exactly two positive divisors. So \\(1\\) has <b>no prime factors</b>: its only divisor is not prime.",
+    {stmt:true,keyText:key});},
+  function(){var key="Every prime divides \\(0\\), and a product of primes is never \\(0\\), so no fixed set of primes builds \\(0\\)";
+    return mcq("Why does the number \\(0\\) have no prime factors?",
+    key,
+    ["Zero is an even number, and even numbers take their prime factors from the number that is exactly half as big as it is",
+     "Zero has no divisors at all, and a number without any divisors cannot have prime factors in a list",
+     "Zero is less than every prime, and numbers below the smallest prime are given no prime factors"],
+    "For any prime \\(p\\), \\(0 = p \\times 0\\), so every prime divides \\(0\\); there is no single set of prime divisors to name. Also, a product of primes is at least \\(2\\), never \\(0\\). So \\(0\\) has <b>no prime factors</b> and no prime factorization.",
+    {stmt:true,keyText:key});},
+  function(){var key="A prime factorization uses only prime numbers, and \\(1\\) is not a prime number";
+    return mcq("A student writes: the prime factorization of \\(1\\) is \\(1\\). Which statement explains the mistake?",
+    key,
+    ["A prime factorization uses only even numbers, and \\(1\\) is an odd number here",
+     "A prime factorization must start with \\(2\\), and this one starts with the number \\(1\\)",
+     "A prime factorization must have two factors, and this one has only one factor"],
+    "A prime factorization is a product in which every factor is prime. The number \\(1\\) is neither prime nor composite: it has only one positive divisor, while a prime has exactly two. So writing \\(1\\) on its own is <b>not a prime factorization</b>, because \\(1\\) is not prime.",
+    {stmt:true,keyText:key});},
+  function(){var key="\\(1\\) is not prime, and \\(0\\) cannot be built as a product of primes, so neither has prime factors";
+    return mcq("Which statement correctly explains why \\(0\\) and \\(1\\) do not appear in prime factorizations?",
+    key,
+    ["\\(1\\) is too small to divide anything at all, and \\(0\\) is too small to be divided by prime numbers",
+     "\\(0\\) and \\(1\\) are both even numbers, and even numbers are described without prime factors",
+     "\\(0\\) and \\(1\\) have prime factors, but the factors are hidden and are never written down"],
+    "The number \\(1\\) is not prime, so it cannot serve as a prime factor or be built from primes. A product of primes is always at least \\(2\\), so it can never equal \\(0\\), and every prime divides \\(0\\) anyway. So <b>neither \\(0\\) nor \\(1\\) has prime factors</b>.",
+    {stmt:true,keyText:key});}
+]));
+
+/* ================= 3. perfect squares and cubes, roots (1.8, 1.9, 1.10, L1) ================= */
+E("u2-perfect",2,["1.8","1.9","1.10"],1,"gen",function(){
+  var mode=ri(1,3);
+  if(mode===1){
+    var cat=pick([1,2,3,4,4]),n,ansText;
+    if(cat===1){var r=ri(3,35);n=r*r;var t=0;while((u2isCu(n)||!u2isSq(n))&&t<100){r=ri(3,35);n=r*r;t++;}ansText="Perfect square only";}
+    else if(cat===2){var r2=ri(2,12);n=r2*r2*r2;var t2=0;while((u2isSq(n)||!u2isCu(n))&&t2<100){r2=ri(2,12);n=r2*r2*r2;t2++;}ansText="Perfect cube only";}
+    else if(cat===3){n=pick([64,729,4096,15625,46656]);ansText="Both a perfect square and a perfect cube";}
+    else{n=ri(10,2000);var t3=0;while((u2isSq(n)||u2isCu(n))&&t3<200){n=ri(10,2000);t3++;}ansText="Neither a perfect square nor a perfect cube";}
+    var sqR=Math.round(Math.sqrt(n)),cuR=Math.round(Math.cbrt(n));
+    var sol="Check both roots. The square root of \\("+n+"\\) is "+(u2isSq(n)?"exactly \\("+sqR+"\\), since \\("+sqR+"^2 = "+n+"\\)":"not a whole number, since \\("+sqR+"^2 = "+(sqR*sqR)+"\\) and \\("+(sqR+1)+"^2 = "+((sqR+1)*(sqR+1))+"\\) bracket it")+
+      ". The cube root of \\("+n+"\\) is "+(u2isCu(n)?"exactly \\("+cuR+"\\), since \\("+cuR+"^3 = "+n+"\\)":"not a whole number, since \\("+cuR+"^3 = "+(cuR*cuR*cuR)+"\\) and \\("+(cuR+1)+"^3 = "+((cuR+1)*(cuR+1)*(cuR+1))+"\\) bracket it")+
+      ". So \\("+n+"\\) is classified as: <b>"+ansText.toLowerCase()+"</b>.";
+    return mcq("How is the number \\("+n+"\\) best classified?",
+      ansText,
+      ["Perfect square only","Perfect cube only","Both a perfect square and a perfect cube","Neither a perfect square nor a perfect cube"].filter(function(s){return s!==ansText;}),
+      sol,{mode:mode,n:n,ansText:ansText});
+  }
+  if(mode===2){
+    var r3=ri(4,40),n3=r3*r3;
+    var ds=u2pickD3(r3,[r3-1,r3+1,r3+2,r3-2,2*r3]).map(function(v){return "\\("+v+"\\)";});
+    return mcq("What is \\(\\sqrt{"+n3+"}\\)?",
+      "\\("+r3+"\\)",ds,
+      "Find the whole number that multiplies by itself to give \\("+n3+"\\): \\["+
+      "\\begin{aligned} "+r3+" \\times "+r3+" &= "+n3+" \\\\ \\sqrt{"+n3+"} &= "+r3+" \\end{aligned} \\]"+
+      " The square root is <b>\\("+r3+"\\)</b>.",
+      {mode:mode,n:n3,ansVal:r3});
+  }
+  var r4=ri(3,15),n4=r4*r4*r4;
+  var ds4=u2pickD3(r4,[r4-1,r4+1,r4+2,r4-2,2*r4]).map(function(v){return "\\("+v+"\\)";});
+  return mcq("What is \\(\\sqrt[3]{"+n4+"}\\)?",
+    "\\("+r4+"\\)",ds4,
+    "Find the whole number that multiplies by itself three times to give \\("+n4+"\\): \\["+
+    "\\begin{aligned} "+r4+" \\times "+r4+" \\times "+r4+" &= "+n4+" \\\\ \\sqrt[3]{"+n4+"} &= "+r4+" \\end{aligned} \\]"+
+    " The cube root is <b>\\("+r4+"\\)</b>.",
+    {mode:mode,n:n4,ansVal:r4});
+});
+
+/* ================= 4. index and radicand (1.1, L1) ================= */
+E("u2-index",2,["1.1"],1,"gen",function(){
+  var mode=ri(1,3);
+  if(mode===3){
+    var idx=pick([3,4,5]),base=ri(2,5),rad=Math.pow(base,idx);
+    var radStr=u2radS(idx,rad);
+    var key="Find a number that gives \\("+rad+"\\) when it is multiplied by itself \\("+idx+"\\) times";
+    var d1="Find a number that gives \\("+rad+"\\) when it is multiplied by \\("+idx+"\\) exactly";
+    var d2="Multiply the number \\("+rad+"\\) by itself \\("+idx+"\\) times and then report the complete result";
+    var d3="Divide the number \\("+rad+"\\) into \\("+idx+"\\) equal groups and report the size";
+    return mcq("In the radical \\("+radStr+"\\), what does the index tell you?",
+      key,[d1,d2,d3],
+      "The index of a radical tells how many equal factors of the radicand the root represents. Here the index is \\("+idx+"\\), so \\("+radStr+"\\) asks for a number which, used as a factor \\("+idx+"\\) times, gives \\("+rad+"\\): indeed \\("+base+"^"+idx+" = "+rad+"\\), so the root is \\("+base+"\\). The index tells you to <b>find a number that gives \\("+rad+"\\) when multiplied by itself \\("+idx+"\\) times</b>.",
+      {mode:mode,idx:idx,rad:rad,stmt:true,keyText:key});
+  }
+  var idx2=ri(2,9),rad2=ri(10,999);
+  var radStr2=u2radS(idx2,rad2);
+  if(mode===1){
+    var ds=u2pickD3(idx2,[idx2-1,idx2+1,idx2+2,2,3]).map(function(v){return "\\("+v+"\\)";});
+    return mcq("What is the <b>index</b> of the radical \\("+radStr2+"\\)?",
+      "\\("+idx2+"\\)",ds,
+      "The index is the small number written in the notch of the radical sign"+(idx2===2?". When no index is written, the index is understood to be \\(2\\) (a square root)":", here \\("+idx2+"\\)")+". The number under the sign, \\("+rad2+"\\), is the radicand. The index is <b>\\("+idx2+"\\)</b>.",
+      {mode:mode,idx:idx2,rad:rad2,ansVal:idx2});
+  }
+  var ds2=u2pickD3(rad2,[rad2-1,rad2+1,rad2+10,rad2-10,idx2]).map(function(v){return "\\("+v+"\\)";});
+  return mcq("What is the <b>radicand</b> of the radical \\("+radStr2+"\\)?",
+    "\\("+rad2+"\\)",ds2,
+    "The radicand is the number under the radical sign, here \\("+rad2+"\\). The small number in the notch, \\("+idx2+"\\), is the index. The radicand is <b>\\("+rad2+"\\)</b>.",
+    {mode:mode,idx:idx2,rad:rad2,ansVal:rad2});
+});
+
+/* ================= 5. GCF and LCM (1.14, L2) ================= */
+E("u2-gcf-lcm",2,["1.14"],2,"gen",function(){
+  var mode=ri(1,4),a,b,c,ans,kindWord,nums;
+  if(mode===1){
+    var g=ri(2,18),u=ri(2,9),v=ri(2,9),t=0;
+    while(u2gcd(u,v)!==1&&t<100){u=ri(2,9);v=ri(2,9);t++;}
+    a=g*u;b=g*v;ans=g;kindWord="greatest common factor";nums=[a,b];c=null;
+  }else if(mode===2){
+    var g2=ri(2,12),u2=ri(1,6),v2=ri(1,6),w2=ri(1,6),t2=0;
+    while(u2gcd(u2gcd(u2,v2),w2)!==1&&t2<100){u2=ri(1,6);v2=ri(1,6);w2=ri(1,6);t2++;}
+    a=g2*u2;b=g2*v2;c=g2*w2;ans=g2;kindWord="greatest common factor";nums=[a,b,c];
+  }else if(mode===3){
+    a=ri(4,40);b=ri(4,40);ans=u2lcm(a,b);kindWord="least common multiple";nums=[a,b];c=null;
+  }else{
+    a=ri(3,20);b=ri(3,20);c=ri(3,20);ans=u2lcm(u2lcm(a,b),c);kindWord="least common multiple";nums=[a,b,c];
+  }
+  var isGcf=(kindWord==="greatest common factor");
+  var cand=isGcf?[ans+1,ans-1,2*ans,ans+2,nums[0],nums[1]]:[ans-nums[0],ans-nums[1],nums[0]*nums[1],ans+nums[0],u2gcd(a,b),ans+1];
+  var ds=u2pickD3(ans,cand).map(function(v){return ""+v;});
+  var facLines=nums.map(function(x){return x+" &= "+u2facStr(x);}).join(" \\\\ ");
+  var reason=isGcf?
+    "The answer is the largest value that divides evenly into "+(nums.length===3?"each of the three numbers":"both numbers")+". Matching the prime factorizations and keeping the shared primes at the lower exponent gives \\("+ans+"\\).":
+    "The answer is the smallest value that "+(nums.length===3?"each of the three numbers":"both numbers")+" divides evenly into. Building it from the prime factorizations, keeping each prime at the higher exponent, gives \\("+ans+"\\).";
+  return mcq("What is the <b>"+kindWord+"</b> of \\("+nums.join(", ")+"\\)?",
+    ""+ans,ds,
+    "Write each number as a product of primes: \\[ \\begin{aligned} "+facLines+" \\end{aligned} \\] "+reason+
+    " The "+kindWord+" is <b>\\("+ans+"\\)</b>.",
+    {mode:mode,a:a,b:b,c:c,ans:ans,isGcf:isGcf});
+});
+
+/* ================= 6. GCF / LCM problems (1.15, L2, num) ================= */
+E("u2-gcf-lcm-problem",2,["1.15"],2,"gen",function(){
+  var ctx=ri(1,3);
+  if(ctx===1){
+    var g=ri(6,30),u=ri(2,6),v=ri(2,6),t=0;
+    while((u2gcd(u,v)!==1||u===v)&&t<100){u=ri(2,6);v=ri(2,6);t++;}
+    var W=g*u,L=g*v;
+    return numq("A rectangular floor measures \\("+W+"\\) cm by \\("+L+"\\) cm. It is to be covered exactly by the largest possible square tiles, with no cutting and no gaps. What is the side length, in centimetres, of one tile?",
+      g,0.001,
+      "The tile side must divide evenly into both \\("+W+"\\) and \\("+L+"\\), and it must be as large as possible, so this is a common divisor question. \\["+
+      "\\begin{aligned} "+W+" &= "+u2facStr(W)+" \\\\ "+L+" &= "+u2facStr(L)+" \\end{aligned} \\]"+
+      " The largest value dividing both is \\("+g+"\\). The side length is <b>\\("+g+"\\) cm</b>.",
+      {ctx:ctx,W:W,L:L,ans:g,kind:"gcf"});
+  }
+  if(ctx===2){
+    var a=ri(4,28),b=ri(4,28),t2=0;
+    while((a===b||u2lcm(a,b)===Math.max(a,b))&&t2<100){a=ri(4,28);b=ri(4,28);t2++;}
+    var ans=u2lcm(a,b);
+    return numq("Two harbour ferries leave the same dock together at noon. One ferry then leaves every \\("+a+"\\) minutes and the other leaves every \\("+b+"\\) minutes. In how many minutes will the two ferries next leave the dock together?",
+      ans,0.001,
+      "The ferries leave together again at a time that is a multiple of both \\("+a+"\\) and \\("+b+"\\), and the first such time is the smallest common multiple. \\["+
+      "\\begin{aligned} "+a+" &= "+u2facStr(a)+" \\\\ "+b+" &= "+u2facStr(b)+" \\end{aligned} \\]"+
+      " The smallest value that both divide into is \\("+ans+"\\). They next leave together in <b>\\("+ans+"\\) minutes</b>.",
+      {ctx:ctx,a:a,b:b,ans:ans,kind:"lcm"});
+  }
+  var g3=ri(4,20),p=ri(2,9),q=ri(2,9),t3=0;
+  while(u2gcd(p,q)!==1&&t3<100){p=ri(2,9);q=ri(2,9);t3++;}
+  var A=g3*p,B=g3*q;
+  return numq("A caterer has \\("+A+"\\) apples and \\("+B+"\\) oranges. She packs identical baskets using all of the fruit, with the same number of apples in every basket and the same number of oranges in every basket. What is the greatest number of baskets she can pack?",
+    g3,0.001,
+    "The number of baskets must divide evenly into both \\("+A+"\\) and \\("+B+"\\), and she wants it as large as possible, so this is a common divisor question. \\["+
+    "\\begin{aligned} "+A+" &= "+u2facStr(A)+" \\\\ "+B+" &= "+u2facStr(B)+" \\end{aligned} \\]"+
+    " The largest value dividing both is \\("+g3+"\\). The greatest number of baskets is <b>\\("+g3+"\\)</b>.",
+    {ctx:ctx,A:A,B:B,ans:g3,kind:"gcf"});
+});
+
+/* ================= 7. entire radical to mixed radical (1.16, L2) ================= */
+E("u2-radical-mixed",2,["1.16"],2,"gen",function(){
+  var idx=pick([2,2,3,3,4]),k,m,N,mlist;
+  if(idx===2){k=ri(2,15);mlist=[2,3,5,6,7,10,11,13,14,15,17,19,21,22,23,26,29,30,31,33,34,35,37,38,39];}
+  else if(idx===3){k=ri(2,7);mlist=[2,3,4,5,6,7,9,10,11,12,13,14,15,17,18,19,20,21,22,23,25,26,28,29,30,31,33,34,35,36,37,38,39,41,42];}
+  else{k=ri(2,4);mlist=[2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,18,19,20,22,24,25,26,27,28,29,30,31];}
+  m=pick(mlist);N=Math.pow(k,idx)*m;
+  var key="\\("+k+u2radS(idx,m)+"\\)";
+  var mAlt=pick(mlist.filter(function(x){return x!==m;}));
+  var cands=["\\("+(k+1)+u2radS(idx,m)+"\\)","\\("+k+u2radS(idx,mAlt)+"\\)","\\("+(k*k)+u2radS(idx,m)+"\\)"];
+  if(k>2)cands.push("\\("+(k-1)+u2radS(idx,m)+"\\)");
+  cands.push("\\("+k+u2radS(idx,m*2)+"\\)");
+  var ds=u2pickS3(key,cands);
+  return mcq("Express \\("+u2radS(idx,N)+"\\) as a <b>mixed radical</b> in simplest form.",
+    key,ds,
+    "Pull out the largest perfect "+(idx===2?"square":idx===3?"cube":"fourth power")+" factor of \\("+N+"\\): \\["+
+    "\\begin{aligned} "+u2radS(idx,N)+" &= "+u2radS(idx,Math.pow(k,idx)+" \\times "+m)+" \\\\ &= "+k+u2radS(idx,m)+" \\end{aligned} \\]"+
+    " The mixed radical in simplest form is <b>\\("+k+u2radS(idx,m)+"\\)</b>.",
+    {idx:idx,k:k,m:m,N:N});
+});
+
+/* ================= 8. mixed radical to entire radical (1.17, L2) ================= */
+E("u2-radical-entire",2,["1.17"],2,"gen",function(){
+  var idx=pick([2,2,3,3,4]),k,m,mlist;
+  if(idx===2){k=ri(2,12);mlist=[2,3,5,6,7,10,11,13,14,15,17,19,21,22,23,26,29,30];}
+  else if(idx===3){k=ri(2,6);mlist=[2,3,4,5,6,7,9,10,11,12,13,14,15,17,18,19,20,21,22,23,25,26,28,29,30];}
+  else{k=ri(2,3);mlist=[2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,18,19,20,22,24,25,26,27,28,29,30,31];}
+  m=pick(mlist);
+  var ansN=Math.pow(k,idx)*m;
+  var key="\\("+u2radS(idx,ansN)+"\\)";
+  var candN=[k*m,Math.pow(k,idx+1)*m,Math.pow(k+1,idx)*m,Math.pow(k,idx)*(m+1),Math.pow(k,idx-1)*m];
+  var ds=u2pickS3(key,candN.map(function(v){return "\\("+u2radS(idx,v)+"\\)";}));
+  return mcq("Express \\("+k+u2radS(idx,m)+"\\) as an <b>entire radical</b>.",
+    key,ds,
+    "Bring the coefficient \\("+k+"\\) under the radical sign by writing it as a root: \\("+k+" = "+u2radS(idx,Math.pow(k,idx))+"\\). Then \\["+
+    "\\begin{aligned} "+k+u2radS(idx,m)+" &= "+u2radS(idx,Math.pow(k,idx))+" \\times "+u2radS(idx,m)+" \\\\ &= "+u2radS(idx,ansN)+" \\end{aligned} \\]"+
+    " The entire radical is <b>\\("+u2radS(idx,ansN)+"\\)</b>.",
+    {idx:idx,k:k,m:m,ansN:ansN});
+});
+
+/* ================= 9. rational exponents and radicals (1.3, L2) ================= */
+E("u2-rational-exp",2,["1.3"],2,"gen",function(){
+  var n=ri(2,6),m=ri(1,9),t=0;
+  while((u2gcd(m,n)!==1||m===n)&&t<200){m=ri(1,9);n=ri(2,6);t++;}
+  var b=ri(2,25),mode=ri(1,2);
+  function radPow(bb,mm,nn){
+    if(mm===1)return u2radS(nn,bb);
+    if(nn===2)return "\\sqrt{"+bb+"^"+mm+"}";
+    return "\\sqrt["+nn+"]{"+bb+"^"+mm+"}";
+  }
+  if(mode===1){
+    var key="\\("+radPow(b,m,n)+"\\)";
+    var cands=[];
+    if(m>1)cands.push("\\("+u2radS(n,b)+"\\)");
+    cands.push("\\("+radPow(b,m,n+1)+"\\)");
+    cands.push("\\("+radPow(b,m+1,n)+"\\)");
+    if(m>=2)cands.push("\\("+radPow(b,n,m)+"\\)");
+    cands.push("\\("+radPow(b,1,n)+"\\)");
+    cands.push("\\("+radPow(b,m,n+2)+"\\)");
+    var ds=u2pickS3(key,cands);
+    return mcq("Express \\("+b+"^{"+FR(m,n)+"}\\) as a radical.",
+      key,ds,
+      "In a rational exponent, the denominator is the index of the root and the numerator is the power: \\["+
+      "\\begin{aligned} "+b+"^{"+FR(m,n)+"} &= \\left("+u2radS(n,b)+"\\right)^"+m+" \\\\ &= "+radPow(b,m,n)+" \\end{aligned} \\]"+
+      " As a radical, the expression is <b>\\("+radPow(b,m,n)+"\\)</b>.",
+      {mode:mode,b:b,m:m,n:n,keyStr:key});
+  }
+  var key2="\\("+b+"^{"+FR(m,n)+"}\\)";
+  var cands2=["\\("+b+"^{"+FR(n,m)+"}\\)","\\("+b+"^{"+FR(m+1,n)+"}\\)","\\("+b+"^{"+FR(m,n+1)+"}\\)","\\("+b+"^{"+(m*n)+"}\\)","\\("+b+"^{"+FR(m+2,n)+"}\\)"];
+  if(m===1)cands2=cands2.filter(function(s){return s!==key2;});
+  var ds2=u2pickS3(key2,cands2);
+  return mcq("Express \\("+radPow(b,m,n)+"\\) as a power with a rational exponent.",
+    key2,ds2,
+    "The index of the root becomes the denominator of the exponent and the power on the radicand becomes the numerator: \\["+
+    "\\begin{aligned} "+radPow(b,m,n)+" &= \\left("+b+"^"+m+"\\right)^{"+FR(1,n)+"} \\\\ &= "+b+"^{"+FR(m,n)+"} \\end{aligned} \\]"+
+    " As a power, the expression is <b>\\("+b+"^{"+FR(m,n)+"}\\)</b>.",
+    {mode:mode,b:b,m:m,n:n,keyStr:key2});
+});
+
+/* ================= 10. negative exponents (1.5, L2, num) ================= */
+E("u2-negative-exp",2,["1.5"],2,"gen",function(){
+  var mode=ri(1,4);
+  var pattern="The pattern behind negative exponents comes from dividing by the base at each step: as the exponent drops by \\(1\\), the value is divided by the base. Continuing the pattern past zero gives reciprocals, so \\(a^{-n} = "+FR(1,"a^n")+"\\) for \\(a \\ne 0\\). ";
+  if(mode===1){
+    var a=ri(2,30),n=pick([2,2,3,3,4]);if(n===4)a=ri(2,12);
+    var ans=Math.pow(a,n);
+    return numq("When \\("+a+"^{-"+n+"}\\) is written in the form \\("+FR(1,"k")+"\\), what is the value of \\(k\\)?",
+      ans,0.001,
+      pattern+"Here \\["+"\\begin{aligned} "+a+"^{-"+n+"} &= "+FR(1,a+"^"+n)+" \\\\ &= "+FR(1,ans)+" \\end{aligned} \\]"+
+      " So the value of \\(k\\) is <b>\\("+ans+"\\)</b>.",
+      {mode:mode,a:a,n:n,ans:ans});
+  }
+  if(mode===2){
+    var a2=ri(2,15),n2=ri(2,3),ans2=Math.pow(a2,n2);
+    return numq("Evaluate \\(\\left("+FR(1,a2)+"\\right)^{-"+n2+"}\\).",
+      ans2,0.001,
+      pattern+"A negative exponent on a fraction flips the fraction first: \\["+
+      "\\begin{aligned} \\left("+FR(1,a2)+"\\right)^{-"+n2+"} &= "+a2+"^{"+n2+"} \\\\ &= "+ans2+" \\end{aligned} \\]"+
+      " The value is <b>\\("+ans2+"\\)</b>.",
+      {mode:mode,a:a2,n:n2,ans:ans2});
+  }
+  if(mode===3){
+    var a3=pick([2,4,5,8,10,20,25]),n3=ri(1,3);
+    var ans3=Math.round((1/Math.pow(a3,n3))*1e10)/1e10;
+    return numq("Evaluate \\("+a3+"^{-"+n3+"}\\). Give the exact decimal value.",
+      ans3,0.001,
+      pattern+"Here \\["+"\\begin{aligned} "+a3+"^{-"+n3+"} &= "+FR(1,Math.pow(a3,n3))+" \\\\ &= "+ans3+" \\end{aligned} \\]"+
+      " The value is <b>\\("+ans3+"\\)</b>.",
+      {mode:mode,a:a3,n:n3,ans:ans3});
+  }
+  var a4=ri(2,30),n4=ri(2,12);
+  return numq("When \\("+FR(1,a4+"^{"+n4+"}")+"\\) is written as a single power of \\("+a4+"\\), what is the exponent?",
+    -n4,0.001,
+    pattern+"The reciprocal \\("+FR(1,a4+"^{"+n4+"}")+"\\) is the power with the exponent negated: \\("+a4+"^{-"+n4+"}\\). The exponent is <b>\\(-"+n4+"\\)</b>.",
+    {mode:mode,a:a4,n:n4,ans:-n4});
+});
+
+/* ================= 11. why a^(m/n) is a root then a power (1.2, L2, var) ================= */
+E("u2-rational-pattern",2,["1.2"],2,"var",varset([
+  function(){var key="The denominator \\(3\\) names the root and the numerator \\(2\\) names the power: \\(\\left(\\sqrt[3]{8}\\right)^2 = 2^2 = 4\\)";
+    return mcq("Which explanation correctly shows why \\(8^{"+FR(2,3)+"}\\) equals \\(4\\)?",
+    key,
+    ["The numerator \\(2\\) names the root and the denominator \\(3\\) names the power: \\(\\left(\\sqrt{8}\\right)^3\\) is about \\(4\\)",
+     "The fraction \\("+FR(2,3)+"\\) means divide \\(8\\) by \\(3\\) and then round the result up to the whole number \\(4\\)",
+     "The exponent means multiply \\(8\\) by itself \\(2\\) times and then divide the answer \\(64\\) by the number \\(3\\)"],
+    "Use the pattern from the exponent laws: \\(8^{"+FR(1,3)+"}\\) must satisfy \\(\\left(8^{"+FR(1,3)+"}\\right)^3 = 8\\), so \\(8^{"+FR(1,3)+"} = \\sqrt[3]{8} = 2\\). Raising to the numerator power gives \\(2^2 = 4\\). Numeric check: \\(\\left(\\sqrt[3]{8}\\right)^2 = 2^2 = 4\\), matching \\(8^{"+FR(2,3)+"}\\). The denominator names the root and the numerator names the power, giving <b>\\(4\\)</b>.",
+    {stmt:true,keyText:key});},
+  function(){var key="Raising \\(a^{"+FR(1,"n")+"}\\) to the power \\(n\\) must give \\(a\\), so \\(a^{"+FR(1,"n")+"}\\) is the \\(n\\)th root of \\(a\\); raising that root to \\(m\\) gives the value";
+    return mcq("A student asks why \\(a^{"+FR("m","n")+"} = \\left(\\sqrt[n]{a}\\right)^m\\). Which explanation uses the exponent laws correctly?",
+    key,
+    ["The fraction \\("+FR("m","n")+"\\) means the base \\(a\\) is multiplied by \\(m\\) and then divided by \\(n\\), and roots are just a shorter way to write that division",
+     "The exponent laws say exponents in a fraction cancel out, so \\(a^{"+FR("m","n")+"}\\) is the same as \\(a\\), and the root form is only a different notation for \\(a\\)",
+     "A root is defined as any fractional exponent, so the equality holds by definition and no exponent law is needed"],
+    "By the power law, \\(\\left(a^{"+FR(1,"n")+"}\\right)^n = a^{"+FR(1,"n")+" \\times n} = a^1 = a\\). The only positive quantity raised to the power \\(n\\) that gives \\(a\\) is \\(\\sqrt[n]{a}\\), so \\(a^{"+FR(1,"n")+"} = \\sqrt[n]{a}\\). Then \\(a^{"+FR("m","n")+"} = \\left(a^{"+FR(1,"n")+"}\\right)^m = \\left(\\sqrt[n]{a}\\right)^m\\). Numeric check with \\(a = 27\\), \\(m = 2\\), \\(n = 3\\): \\(\\left(\\sqrt[3]{27}\\right)^2 = 3^2 = 9 = 27^{"+FR(2,3)+"}\\). The pattern is: <b>the \\(n\\)th root comes from the denominator, then raise to the numerator power</b>.",
+    {stmt:true,keyText:key});},
+  function(){var key="Since \\(3^3 = 27\\), the cube root part gives \\(3\\), and the numerator power then gives \\(3^2 = 9\\), so both sides match";
+    return mcq("Which statement best explains, using a pattern, why \\(27^{"+FR(2,3)+"}\\) equals \\(\\left(\\sqrt[3]{27}\\right)^2\\)?",
+    key,
+    ["Since \\(9^2 = 81\\), the square part gives \\(9\\), and the denominator root then adjusts the answer \\(81\\) back down to \\(9\\)",
+     "Since \\(27\\) divided by \\(3\\) is \\(9\\), the denominator acts as a plain divisor in the calculation",
+     "Since \\(2^3 = 8\\), the powers \\(2\\) and \\(3\\) trade places, and swapping them in any base gives the same value as the root form"],
+    "Follow the denominator first: \\(27^{"+FR(1,3)+"} = \\sqrt[3]{27} = 3\\), because \\(3^3 = 27\\). The numerator then says to square: \\(3^2 = 9\\). So \\(27^{"+FR(2,3)+"} = \\left(\\sqrt[3]{27}\\right)^2 = 9\\), and the numeric check confirms the pattern: <b>root first from the denominator, then the numerator power, giving \\(9\\)</b>.",
+    {stmt:true,keyText:key});},
+  function(){var key="The fourth root of \\(16\\) is \\(2\\), because \\(2^4 = 16\\), and cubing that root gives \\(2^3 = 8\\), which matches the power";
+    return mcq("Which explanation correctly shows why \\(16^{"+FR(3,4)+"}\\) equals \\(8\\)?",
+    key,
+    ["The square root of \\(16\\) is \\(4\\), because \\(4^2 = 16\\), and raising that root to \\(4\\) gives a value near \\(8\\)",
+     "The fraction \\("+FR(3,4)+"\\) of \\(16\\) is \\(12\\), and subtracting the denominator \\(4\\) from that part gives the stated answer \\(8\\)",
+     "The cube of \\(16\\) is very large, and taking the fourth root of that cube brings the value back down close to the number \\(8\\)"],
+    "The denominator \\(4\\) names a fourth root: \\(\\sqrt[4]{16} = 2\\) since \\(2^4 = 16\\). The numerator \\(3\\) then cubes it: \\(2^3 = 8\\). Numeric check: \\(\\left(\\sqrt[4]{16}\\right)^3 = 2^3 = 8 = 16^{"+FR(3,4)+"}\\). The value is <b>\\(8\\)</b>, from the root named by the denominator followed by the power named by the numerator.",
+    {stmt:true,keyText:key});}
+]));
+
+/* ================= 12. exponent laws, integral exponents (1.6, L2) ================= */
+E("u2-laws-integral",2,["1.6"],2,"gen",function(){
+  var mode=ri(1,6);
+  if(mode===1){
+    var a=ri(2,9),b=ri(2,9),t=0;
+    while((a*b===a+b||Math.abs(a-b)===a+b||a+b+1===a*b)&&t<100){a=ri(2,9);b=ri(2,9);t++;}
+    var key="\\(x^{"+(a+b)+"}\\)";
+    var ds=u2pickS3(key,["\\(x^{"+(a*b)+"}\\)","\\(x^{"+Math.abs(a-b)+"}\\)","\\(x^{"+(a+b+1)+"}\\)","\\(x^{"+(a+b-1)+"}\\)"]);
+    return mcq("Simplify: \\(x^{"+a+"} \\times x^{"+b+"}\\)",
+      key,ds,
+      "When multiplying powers with the same base, add the exponents: \\["+
+      "\\begin{aligned} x^{"+a+"} \\times x^{"+b+"} &= x^{"+a+" + "+b+"} \\\\ &= x^{"+(a+b)+"} \\end{aligned} \\]"+
+      " The simplified form is <b>\\(x^{"+(a+b)+"}\\)</b>.",
+      {mode:mode,a:a,b:b,keyStr:key});
+  }
+  if(mode===2){
+    var a2=ri(5,12),b2=ri(2,10),t2=0;
+    while((a2-b2<1||a2+b2===a2||a2-b2+1===a2)&&t2<100){a2=ri(5,12);b2=ri(2,a2-2);t2++;}
+    var key2="\\(x^{"+(a2-b2)+"}\\)";
+    var ds2=u2pickS3(key2,["\\(x^{"+(a2+b2)+"}\\)","\\(x^{"+a2+"}\\)","\\(x^{"+(a2-b2+1)+"}\\)","\\(x^{"+(a2*b2)+"}\\)"]);
+    return mcq("Simplify: \\("+FR("x^{"+a2+"}","x^{"+b2+"}")+"\\)",
+      key2,ds2,
+      "When dividing powers with the same base, subtract the exponents: \\["+
+      "\\begin{aligned} "+FR("x^{"+a2+"}","x^{"+b2+"}")+" &= x^{"+a2+" - "+b2+"} \\\\ &= x^{"+(a2-b2)+"} \\end{aligned} \\]"+
+      " The simplified form is <b>\\(x^{"+(a2-b2)+"}\\)</b>.",
+      {mode:mode,a:a2,b:b2,keyStr:key2});
+  }
+  if(mode===3){
+    var a3=ri(2,4),b3=ri(2,4);
+    if(a3===2&&b3===2)a3=3;
+    var key3="\\(x^{"+(a3*b3)+"}\\)";
+    var ds3=u2pickS3(key3,["\\(x^{"+(a3+b3)+"}\\)","\\(x^{"+Math.pow(a3,b3)+"}\\)","\\(x^{"+Math.pow(b3,a3)+"}\\)","\\(x^{"+(a3*b3+2)+"}\\)"]);
+    return mcq("Simplify: \\(\\left(x^{"+a3+"}\\right)^{"+b3+"}\\)",
+      key3,ds3,
+      "When a power is raised to a power, multiply the exponents: \\["+
+      "\\begin{aligned} \\left(x^{"+a3+"}\\right)^{"+b3+"} &= x^{"+a3+" \\times "+b3+"} \\\\ &= x^{"+(a3*b3)+"} \\end{aligned} \\]"+
+      " The simplified form is <b>\\(x^{"+(a3*b3)+"}\\)</b>.",
+      {mode:mode,a:a3,b:b3,keyStr:key3});
+  }
+  if(mode===4){
+    var a4=ri(2,6);
+    var key4="\\(x^{"+a4+"}y^{"+a4+"}\\)";
+    var ds4=u2pickS3(key4,["\\(x^{"+a4+"}y\\)","\\(xy^{"+a4+"}\\)","\\((xy)^{"+(a4*a4)+"}\\)"]);
+    return mcq("Simplify: \\((xy)^{"+a4+"}\\)",
+      key4,ds4,
+      "A power of a product applies the exponent to each factor: \\["+
+      "\\begin{aligned} (xy)^{"+a4+"} &= x^{"+a4+"}y^{"+a4+"} \\end{aligned} \\]"+
+      " The simplified form is <b>\\(x^{"+a4+"}y^{"+a4+"}\\)</b>.",
+      {mode:mode,a:a4,keyStr:key4});
+  }
+  if(mode===5){
+    var a5=ri(3,8),b5=ri(3,8),c5=ri(3,8),d5=ri(3,8);
+    var key5="\\(x^{"+(a5+c5)+"}y^{"+(b5+d5)+"}\\)";
+    var ds5=u2pickS3(key5,["\\(x^{"+(a5*c5)+"}y^{"+(b5*d5)+"}\\)","\\(x^{"+(a5+c5)+"}y^{"+(b5*d5)+"}\\)","\\(x^{"+(a5*c5)+"}y^{"+(b5+d5)+"}\\)","\\(x^{"+Math.abs(a5-c5)+"}y^{"+(b5+d5)+"}\\)"]);
+    return mcq("Simplify: \\(x^{"+a5+"}y^{"+b5+"} \\times x^{"+c5+"}y^{"+d5+"}\\)",
+      key5,ds5,
+      "Group the powers base by base and add exponents for each base: \\["+
+      "\\begin{aligned} x^{"+a5+"}y^{"+b5+"} \\times x^{"+c5+"}y^{"+d5+"} &= x^{"+a5+" + "+c5+"}y^{"+b5+" + "+d5+"} \\\\ &= x^{"+(a5+c5)+"}y^{"+(b5+d5)+"} \\end{aligned} \\]"+
+      " The simplified form is <b>\\(x^{"+(a5+c5)+"}y^{"+(b5+d5)+"}\\)</b>.",
+      {mode:mode,a:a5,b:b5,c:c5,d:d5,keyStr:key5});
+  }
+  var b6=ri(2,8),c6=pick([3,4,5,6,7]);
+  var key6="\\("+c6+"y^{"+b6+"}\\)";
+  var ds6=u2pickS3(key6,["\\(0\\)","\\("+c6+"xy^{"+b6+"}\\)","\\(y^{"+b6+"}\\)"]);
+  return mcq("Simplify: \\("+c6+"x^0y^{"+b6+"}\\)",
+    key6,ds6,
+    "Any nonzero base to the exponent \\(0\\) equals \\(1\\), so \\(x^0 = 1\\) and the factor \\(x\\) drops out without changing the coefficient: \\["+
+    "\\begin{aligned} "+c6+"x^0y^{"+b6+"} &= "+c6+"(1)y^{"+b6+"} \\\\ &= "+c6+"y^{"+b6+"} \\end{aligned} \\]"+
+    " The simplified form is <b>\\("+c6+"y^{"+b6+"}\\)</b>.",
+    {mode:mode,b:b6,c:c6,keyStr:key6});
+});
+
+/* ================= 13. exponent laws, rational exponents (1.6, L2) ================= */
+function u2expStr(base,n,d){
+  var r=u2red(n,d);
+  if(r[0]===0)return "\\(1\\)";
+  if(r[1]===1){if(r[0]===1)return "\\("+base+"\\)";return "\\("+base+"^{"+r[0]+"}\\)";}
+  return "\\("+base+"^{"+FR(r[0],r[1])+"}\\)";
+}
+E("u2-laws-rational",2,["1.6"],2,"gen",function(){
+  var base=pick(["x","y","z","t"]),mode=ri(1,3);
+  var p=ri(1,7),q=pick([2,3,4,5,6]),r=ri(1,7),s=pick([2,3,4,5,6]),t=0;
+  while(t<200){var rr1=u2red(p,q),rr2=u2red(r,s);if(rr1[1]>=2&&rr2[1]>=2)break;p=ri(1,7);q=pick([2,3,4,5,6]);r=ri(1,7);s=pick([2,3,4,5,6]);t++;}
+  p=rr1[0];q=rr1[1];r=rr2[0];s=rr2[1];
+  var eN,eD,lawText,exprStr;
+  if(mode===1){eN=p*s+r*q;eD=q*s;lawText="When multiplying powers with the same base, add the exponents. Use a common denominator of \\("+(q*s)+"\\)";
+    exprStr=base+"^{"+FR(p,q)+"} \\times "+base+"^{"+FR(r,s)+"}";}
+  else if(mode===2){eN=p*s-r*q;eD=q*s;var t2=0;while(eN===0&&t2<50){r=ri(1,7);var rr3=u2red(r,s);r=rr3[0];s=rr3[1];eN=p*s-r*q;eD=q*s;t2++;}
+    lawText="When dividing powers with the same base, subtract the exponents. Use a common denominator of \\("+(q*s)+"\\)";
+    exprStr=FR(base+"^{"+FR(p,q)+"}",base+"^{"+FR(r,s)+"}");}
+  else{var kk=pick([2,3]);eN=p*kk;eD=q;lawText="When a power is raised to a power, multiply the exponents";
+    exprStr="\\left("+base+"^{"+FR(p,q)+"}\\right)^{"+kk+"}";}
+  var er=u2red(eN,eD);eN=er[0];eD=er[1];
+  var key=u2expStr(base,eN,eD);
+  var candPairs;
+  if(mode===1)candPairs=[[p*s-r*q,q*s],[p*r,q*s],[eN+eD,eD],[eN,eD+1]];
+  else if(mode===2)candPairs=[[p*s+r*q,q*s],[p*r,q*s],[eN+eD,eD],[eN,eD+1]];
+  else candPairs=[[p*2,q],[p*3,q],[p+1,q]];
+  var seenV={},ds=[];
+  candPairs.forEach(function(pr){
+    if(ds.length>=3)return;
+    var cr=u2red(pr[0],pr[1]);
+    if(cr[0]*eD===eN*cr[1])return;
+    var vk=cr[0]+"/"+cr[1];if(seenV[vk])return;seenV[vk]=1;
+    ds.push(u2expStr(base,cr[0],cr[1]));
+  });
+  var pad=2;while(ds.length<3){var cr2=u2red(eN+pad*eD,eD);ds.push(u2expStr(base,cr2[0],cr2[1]));pad++;}
+  return mcq("Simplify: \\("+exprStr+"\\)",
+    key,ds,
+    lawText+": \\[ \\begin{aligned} "+exprStr+" &= "+(key.slice(2,-2))+" \\end{aligned} \\]"+
+    " The simplified form is <b>"+key+"</b>.",
+    {mode:mode,base:base,p:p,q:q,r:r,s:s,eN:eN,eD:eD,keyStr:key});
+});
+
+/* ================= 14. evaluate powers (1.6, 1.3, L2, num) ================= */
+E("u2-evaluate-exp",2,["1.6","1.3"],2,"gen",function(){
+  var mode=ri(1,4);
+  if(mode===1){
+    var n=pick([2,3,4]),r,m,t=0;
+    if(n===2)r=ri(2,14);else if(n===3)r=ri(2,7);else r=ri(2,4);
+    m=ri(1,4);while(u2gcd(m,n)!==1&&t<60){m=ri(1,4);t++;}
+    var b=Math.pow(r,n),ans=Math.pow(r,m);
+    return numq("Evaluate \\("+b+"^{"+FR(m,n)+"}\\).",
+      ans,0.001,
+      "The denominator names the root and the numerator names the power: \\["+
+      "\\begin{aligned} "+b+"^{"+FR(m,n)+"} &= \\left("+u2radS(n,b)+"\\right)^"+m+" \\\\ &= "+r+"^"+m+" \\\\ &= "+ans+" \\end{aligned} \\]"+
+      " The value is <b>\\("+ans+"\\)</b>.",
+      {mode:mode,b:b,m:m,n:n,r:r,ans:ans});
+  }
+  if(mode===2){
+    var fam=pick([2,5]),n2,m2,r2;
+    if(fam===2){n2=pick([3,4,5]);r2=2;}else{n2=pick([2,3]);r2=5;}
+    m2=ri(1,3);var tg2=0;while(u2gcd(m2,n2)!==1&&tg2<60){m2=ri(1,3);tg2++;}
+    var b2=Math.pow(r2,n2),den=Math.pow(r2,m2),ans2=Math.round((1/den)*1e10)/1e10;
+    return numq("Evaluate \\("+b2+"^{-"+FR(m2,n2)+"}\\). Give the exact decimal value.",
+      ans2,0.001,
+      "Take the root first, then the power, then the reciprocal for the negative exponent: \\["+
+      "\\begin{aligned} "+b2+"^{-"+FR(m2,n2)+"} &= "+FR(1,b2+"^{"+FR(m2,n2)+" }")+" \\\\ &= "+FR(1,den+"")+" \\\\ &= "+ans2+" \\end{aligned} \\]"+
+      " The value is <b>\\("+ans2+"\\)</b>.",
+      {mode:mode,b:b2,m:m2,n:n2,r:r2,ans:ans2});
+  }
+  if(mode===3){
+    var nA=pick([2,3]),rA=nA===2?ri(2,10):ri(2,5),mA=ri(1,3),tgA=0;
+    while(u2gcd(mA,nA)!==1&&tgA<60){mA=ri(1,3);tgA++;}
+    var bA=Math.pow(rA,nA),vA=Math.pow(rA,mA);
+    var nB=pick([2,3]),rB=nB===2?ri(2,10):ri(2,5),mB=ri(1,3),tgB=0;
+    while(u2gcd(mB,nB)!==1&&tgB<60){mB=ri(1,3);tgB++;}
+    var bB=Math.pow(rB,nB),vB=Math.pow(rB,mB),t3=0;
+    while(bB===bA&&t3<50){rB=nB===2?ri(2,10):ri(2,5);bB=Math.pow(rB,nB);vB=Math.pow(rB,mB);t3++;}
+    var ans3=vA+vB;
+    return numq("Evaluate \\("+bA+"^{"+FR(mA,nA)+"} + "+bB+"^{"+FR(mB,nB)+"}\\).",
+      ans3,0.001,
+      "Evaluate each power separately, root first and then the power: \\["+
+      "\\begin{aligned} "+bA+"^{"+FR(mA,nA)+"} &= "+vA+" \\\\ "+bB+"^{"+FR(mB,nB)+"} &= "+vB+" \\\\ "+vA+" + "+vB+" &= "+ans3+" \\end{aligned} \\]"+
+      " The value is <b>\\("+ans3+"\\)</b>.",
+      {mode:mode,bA:bA,mA:mA,nA:nA,bB:bB,mB:mB,nB:nB,ans:ans3});
+  }
+  var a4=ri(2,6),p4=ri(1,3),q4=p4+ri(1,4),ans4=Math.pow(a4,q4-p4);
+  return numq("Evaluate \\("+a4+"^{-"+p4+"} \\times "+a4+"^{"+q4+"}\\).",
+    ans4,0.001,
+    "The bases are the same, so add the exponents (the negative exponent subtracts): \\["+
+    "\\begin{aligned} "+a4+"^{-"+p4+"} \\times "+a4+"^{"+q4+"} &= "+a4+"^{"+(q4-p4)+"} \\\\ &= "+ans4+" \\end{aligned} \\]"+
+    " The value is <b>\\("+ans4+"\\)</b>.",
+    {mode:mode,a:a4,p:p4,q:q4,ans:ans4});
+});
+
+/* ================= 15. error analysis (1.7, L3, var) ================= */
+E("u2-error",2,["1.7"],3,"var",varset([
+  function(){var key="The student added the exponents; a power raised to a power multiplies the exponents, so the correct simplification is \\(x^{12}\\)";
+    return mcq("A student simplifies \\(\\left(x^3\\right)^4\\) and gets \\(x^7\\). Which statement identifies the error and gives the correct simplification?",
+    key,
+    ["The student multiplied the exponents; a power raised to a power adds the exponents, so the correct simplification is \\(x^7\\)",
+     "The student added the exponents; a power raised to a power multiplies them, so the correct simplification is \\(x^{10}\\)",
+     "There is no error in the work; adding exponents is the rule for a power of a power, and the correct simplification is \\(x^7\\), exactly as the student wrote"],
+    "A power raised to a power keeps the base and multiplies the exponents: \\(\\left(x^3\\right)^4 = x^{3 \\times 4} = x^{12}\\). The student added \\(3 + 4\\) instead, which is the rule for multiplying powers with the same base. The error is <b>adding the exponents</b>, and the correct simplification is <b>\\(x^{12}\\)</b>.",
+    {stmt:true,keyText:key});},
+  function(){var key="The student left the coefficient unchanged; the power applies to the whole base, so the correct simplification is \\(27x^6\\)";
+    return mcq("A student simplifies \\(\\left(3x^2\\right)^3\\) and gets \\(3x^6\\). Which statement identifies the error and gives the correct simplification?",
+    key,
+    ["The student cubed the coefficient as well; the power applies only to the variable, so the correct simplification is \\(3x^6\\)",
+     "The student left the coefficient unchanged; the power applies to the whole base, so the correct simplification is \\(9x^6\\)",
+     "There is no error in the work; a coefficient is never raised to a power, and the correct simplification is \\(3x^6\\)"],
+    "In \\(\\left(3x^2\\right)^3\\), the exponent \\(3\\) applies to every factor inside the brackets: \\(3^3 \\times \\left(x^2\\right)^3 = 27x^6\\). The student raised only the variable part to the power. The error is <b>leaving the coefficient unchanged</b>, and the correct simplification is <b>\\(27x^6\\)</b>.",
+    {stmt:true,keyText:key});},
+  function(){var key="The student divided the exponents; dividing powers with the same base subtracts them, so the correct simplification is \\(x^3\\)";
+    return mcq("A student simplifies \\("+FR("x^6","x^3")+"\\) and gets \\(x^2\\). Which statement identifies the error and gives the correct simplification?",
+    key,
+    ["The student subtracted the exponents; dividing powers with the same base divides them, so the correct simplification is \\(x^2\\)",
+     "The student divided the exponents; dividing powers with the same base adds them, so the correct simplification is \\(x^9\\)",
+     "There is no error in the work; exponents are divided in a quotient of powers, and the correct simplification is \\(x^2\\)"],
+    "For a quotient of powers with the same base, subtract the exponents: \\("+FR("x^6","x^3")+" = x^{6 - 3} = x^3\\). The student divided \\(6\\) by \\(3\\) instead. The error is <b>dividing the exponents</b>, and the correct simplification is <b>\\(x^3\\)</b>.",
+    {stmt:true,keyText:key});},
+  function(){var key="The student read the negative exponent as a negative answer; a negative exponent gives a reciprocal, so the correct value is \\("+FR(1,16)+"\\)";
+    return mcq("A student evaluates \\(4^{-2}\\) and gets \\(-16\\). Which statement identifies the error and gives the correct simplification?",
+    key,
+    ["The student read the negative exponent as a negative answer; a negative exponent doubles the base, so the correct value is \\(32\\) for this power",
+     "The student should have multiplied the base by the exponent; following that rule here, the correct value for the power is \\(-8\\)",
+     "There is no error in the work; a negative exponent makes the value negative, and the correct value of the power is \\(-16\\)"],
+    "A negative exponent means take the reciprocal, not a negative result: \\(4^{-2} = "+FR(1,"4^2")+" = "+FR(1,16)+"\\). The student treated the exponent as a sign on the answer and multiplied out \\(4^2\\) with a negative sign attached. The error is <b>reading the negative exponent as a negative answer</b>, and the correct value is <b>\\("+FR(1,16)+"\\)</b>.",
+    {stmt:true,keyText:key});},
+  function(){var key="The student multiplied the exponents; multiplying powers with the same base adds them, so the correct simplification is \\(x^9\\)";
+    return mcq("A student simplifies \\(x^5 \\times x^4\\) and gets \\(x^{20}\\). Which statement identifies the error and gives the correct simplification?",
+    key,
+    ["The student added the exponents; multiplying powers with the same base multiplies them, so the correct simplification is \\(x^{20}\\)",
+     "The student multiplied the exponents; multiplying powers with the same base subtracts them, so the correct simplification is \\(x^1\\)",
+     "There is no error in the work; exponents are multiplied in a product of powers, and the correct simplification is \\(x^{20}\\)"],
+    "When multiplying powers with the same base, add the exponents: \\(x^5 \\times x^4 = x^{5 + 4} = x^9\\). The student multiplied \\(5 \\times 4\\), which is the rule for a power raised to a power. The error is <b>multiplying the exponents</b>, and the correct simplification is <b>\\(x^9\\)</b>.",
+    {stmt:true,keyText:key});}
+]));
+
+/* ================= 16. problems with powers and radicals (1.4, L3, num) ================= */
+E("u2-problem",2,["1.4"],3,"gen",function(){
+  var mode=ri(1,5);
+  if(mode===1||mode===5){
+    var prof=pick([
+      {thing:"bacteria culture",start:pick([3,5,6,9,12,15,18,20]),startUnit:"bacteria",unit:"bacteria",per:"hour",mult:2,verb:"doubles"},
+      {thing:"patch of algae on a pond",start:pick([2,4,5,8,10,12,16,20]),startUnit:"square centimetres",unit:"square centimetres of algae",per:"day",mult:2,verb:"doubles"},
+      {thing:"photo post",start:pick([5,10,15,20,25,30,40,50]),startUnit:"views",unit:"views",per:"day",mult:2,verb:"doubles"},
+      {thing:"forwarded message chain",start:pick([2,3,4,5,6]),startUnit:"people",unit:"people reached",per:"round",mult:3,verb:"triples"},
+      {thing:"yeast colony",start:pick([2,3,4,5,6,8]),startUnit:"cells",unit:"cells",per:"hour",mult:3,verb:"triples"}
+    ]);
+    var t=prof.mult===2?ri(3,8):ri(3,6);
+    var ans=prof.start*Math.pow(prof.mult,t);
+    return numq("A "+prof.thing+" starts at \\("+prof.start+"\\) "+prof.startUnit+". The amount "+prof.verb+" every "+prof.per+". What is the total after \\("+t+"\\) "+prof.per+"s? Give the number of "+prof.unit+".",
+      ans,0.001,
+      "Each "+prof.per+" multiplies the total by \\("+prof.mult+"\\), so after \\("+t+"\\) "+prof.per+"s the total is the starting amount times \\("+prof.mult+"\\) raised to the power \\("+t+"\\): \\["+
+      "\\begin{aligned} \\text{total} &= "+prof.start+" \\times "+prof.mult+"^{"+t+"} \\\\ &= "+prof.start+" \\times "+Math.pow(prof.mult,t)+" \\\\ &= "+ans+" \\end{aligned} \\]"+
+      " The total is <b>\\("+ans+"\\)</b> "+prof.unit+".",
+      {mode:mode,start:prof.start,mult:prof.mult,t:t,ans:ans});
+  }
+  if(mode===2){
+    var r=ri(4,60),A=r*r;
+    return numq("A square patio has an area of \\("+A+"\\) square metres. What is the side length, in metres, of the patio?",
+      r,0.001,
+      "For a square, the area is the side length multiplied by itself, so the side length is the square root of the area: \\["+
+      "\\begin{aligned} \\text{side} &= \\sqrt{"+A+"} \\\\ &= "+r+" \\end{aligned} \\]"+
+      " The side length is <b>\\("+r+"\\) m</b>.",
+      {mode:mode,r:r,A:A,ans:r});
+  }
+  if(mode===3){
+    var r3=ri(3,30),V=r3*r3*r3;
+    return numq("A cube-shaped storage box has a volume of \\("+V+"\\) cubic centimetres. What is the edge length, in centimetres, of the box?",
+      r3,0.001,
+      "For a cube, the volume is the edge length used as a factor three times, so the edge length is the cube root of the volume: \\["+
+      "\\begin{aligned} \\text{edge} &= \\sqrt[3]{"+V+"} \\\\ &= "+r3+" \\end{aligned} \\]"+
+      " The edge length is <b>\\("+r3+"\\) cm</b>.",
+      {mode:mode,r:r3,V:V,ans:r3});
+  }
+  var folds=ri(4,9),th=pick([0.08,0.1,0.12]),ans4=Math.round(th*Math.pow(2,folds)*100)/100;
+  return numq("A sheet of paper is \\("+th+"\\) mm thick. It is folded in half, then folded in half again, and so on, for a total of \\("+folds+"\\) folds. How thick, in millimetres, is the folded stack?",
+    ans4,0.01,
+    "Each fold doubles the thickness, so after \\("+folds+"\\) folds the thickness is the original thickness times \\(2\\) raised to the power \\("+folds+"\\): \\["+
+    "\\begin{aligned} \\text{thickness} &= "+th+" \\times 2^{"+folds+"} \\\\ &= "+th+" \\times "+Math.pow(2,folds)+" \\\\ &= "+ans4+" \\end{aligned} \\]"+
+    " The folded stack is <b>\\("+ans4+"\\) mm</b> thick.",
+    {mode:mode,folds:folds,th:th,ans:ans4});
+});
+
+/* ================= 17. sorting rational and irrational numbers (1.18, L2) ================= */
+E("u2-sort-numbers",2,["1.18"],2,"gen",function(){
+  function ratItem(){
+    var kind=ri(1,5);
+    if(kind===1){var p=ri(1,15),q=pick([2,3,4,5,6,7,8,9]),tg=0;while(u2gcd(p,q)!==1&&tg<60){p=ri(1,15);q=pick([2,3,4,5,6,7,8,9]);tg++;}return {str:"\\("+FR(p,q)+"\\)",rat:true};}
+    if(kind===2){return {str:""+pick([0.5,1.25,2.75,3.4,0.125,5.6,7.05,0.9]),rat:true};}
+    if(kind===3){var r=ri(2,12);return {str:"\\(\\sqrt{"+(r*r)+"}\\)",rat:true};}
+    if(kind===4){return {str:"\\(0.\\overline{"+ri(2,9)+"}\\)",rat:true};}
+    var r5=ri(2,6);return {str:"\\(\\sqrt[3]{"+(r5*r5*r5)+"}\\)",rat:true};
+  }
+  function irrItem(){
+    var kind=ri(1,4);
+    if(kind===1){var n=ri(2,60);var t=0;while(u2isSq(n)&&t<100){n=ri(2,60);t++;}return {str:"\\(\\sqrt{"+n+"}\\)",rat:false};}
+    if(kind===2){var n2=ri(2,80);var t2=0;while(u2isCu(n2)&&t2<100){n2=ri(2,80);t2++;}return {str:"\\(\\sqrt[3]{"+n2+"}\\)",rat:false};}
+    if(kind===3){return {str:"\\(\\pi\\)",rat:false};}
+    return {str:pick(["1.01001000100001...","2.12112111211112...","0.123456789101112...","3.23223222322223..."]),rat:false};
+  }
+  var mode=ri(1,3);
+  if(mode===3){
+    function rawOf(it){var s=it.str;if(s.slice(0,2)==="\\("&&s.slice(-2)==="\\)")return s.slice(2,-2);return s;}
+    function fragSet(wantBad){
+      var frags=[],seenF={},g=0;
+      while(frags.length<3&&g<300){g++;
+        var it=(wantBad&&frags.length===2)?irrItem():ratItem();
+        var f=rawOf(it);
+        if(seenF[f])continue;seenF[f]=1;frags.push(f);}
+      return shuffle(frags);
+    }
+    function setStr(frags){return "\\(\\{"+frags.join(", ")+"\\}\\)";}
+    var good=setStr(fragSet(false));
+    var bads=[],guard=0;
+    while(bads.length<3&&guard<200){guard++;var bs=setStr(fragSet(true));if(bs!==good&&bads.indexOf(bs)<0)bads.push(bs);}
+    return mcq("Which set contains <b>only</b> rational numbers?",
+      good,bads,
+      "A rational number can be written as a ratio of integers, which includes fractions, terminating decimals, repeating decimals, and roots of perfect powers. Roots of numbers that are not perfect powers, \\(\\pi\\), and decimals that go on without repeating are irrational. Only one set avoids all of those. The set with only rational numbers is <b>"+good+"</b>.",
+      {mode:mode,keyStr:good});
+  }
+  var wantIrr=(mode===1);
+  var items=[],seen={};
+  function addItem(it){if(!it||seen[it.str])return;seen[it.str]=1;items.push(it);}
+  if(wantIrr){
+    addItem(irrItem());
+    var g1=0;while(items.length<4&&g1<300){g1++;addItem(ratItem());}
+  }else{
+    addItem(ratItem());
+    var g2=0;while(items.length<4&&g2<300){g2++;addItem(irrItem());}
+  }
+  var target=items.filter(function(x){return x.rat===!wantIrr;})[0];
+  var others=items.filter(function(x){return x!==target;}).map(function(x){return x.str;});
+  return mcq(wantIrr?"Which number is <b>irrational</b>?":"Which number is <b>rational</b>?",
+    target.str,others,
+    "Rational numbers are exactly the numbers that can be written as a ratio of two integers: fractions, terminating or repeating decimals, and roots that come out whole. A root of a number that is not a perfect power, the number \\(\\pi\\), and a decimal that continues without repeating are irrational. The "+(wantIrr?"irrational":"rational")+" number in the list is <b>"+target.str+"</b>.",
+    {mode:mode,items:items,keyStr:target.str});
+});
+
+/* ================= 18. subsets of the real numbers (1.19, L2, var) ================= */
+E("u2-subsets",2,["1.19"],2,"var",varset([
+  function(){var key="Integers: the whole numbers, their negatives, and zero";
+    return mcq("What is the <b>most specific</b> subset of the real numbers that \\(-12\\) belongs to?",
+    key,["Natural numbers: the counting numbers, starting from one","Whole numbers: the counting numbers, together with zero","Rational numbers: ratios of two integers"],
+    "The number \\(-12\\) is a negative whole value. It is not a natural number (the counting numbers start at \\(1\\)) and not a whole number (whole numbers are \\(0\\) and up). It is an integer, and although every integer is also rational, the most specific set that fits is the integers. The most specific subset is <b>integers</b>.",
+    {stmt:true,keyText:key});},
+  function(){var key="Whole numbers: the counting numbers, together with zero";
+    return mcq("What is the <b>most specific</b> subset of the real numbers that \\(0\\) belongs to?",
+    key,["Natural numbers: the counting numbers, starting from one","Integers: the whole numbers, their negatives, and zero","Rational numbers: ratios of two integers"],
+    "The number \\(0\\) is not a natural number, because the natural numbers are the counting numbers \\(1, 2, 3, \\ldots\\). It is a whole number, since the whole numbers are the natural numbers together with \\(0\\). It is also an integer and a rational number, but the most specific set that fits is the whole numbers. The most specific subset is <b>whole numbers</b>.",
+    {stmt:true,keyText:key});},
+  function(){var key="Rational numbers: ratios of two integers, with a nonzero denominator";
+    return mcq("What is the <b>most specific</b> subset of the real numbers that \\("+FR(4,5)+"\\) belongs to?",
+    key,["Natural numbers: the counting numbers, starting from one and continuing without end","Whole numbers: the counting numbers, together with zero","Integers: the whole numbers, their negatives, and zero"],
+    "The value \\("+FR(4,5)+"\\) is a ratio of two integers, which is exactly the definition of a rational number. It is not a counting number, a whole number, or an integer, because it lies between \\(0\\) and \\(1\\). The most specific subset is <b>rational numbers</b>.",
+    {stmt:true,keyText:key});},
+  function(){var key="Irrational numbers: real numbers that are not ratios of integers";
+    return mcq("What is the <b>most specific</b> subset of the real numbers that \\(\\sqrt{7}\\) belongs to?",
+    key,["Natural numbers: the counting numbers, starting from one","Integers: the whole numbers, their negatives, and zero","Rational numbers: ratios of two integers, with a nonzero denominator, in lowest terms"],
+    "The value \\(\\sqrt{7}\\) cannot be written as a ratio of two integers, because \\(7\\) is not a perfect square and its root is a non-terminating, non-repeating decimal. Numbers that are real but not rational form the irrational numbers. The most specific subset is <b>irrational numbers</b>.",
+    {stmt:true,keyText:key});},
+  function(){var key="Natural numbers: the counting numbers, starting from one";
+    return mcq("What is the <b>most specific</b> subset of the real numbers that \\(9\\) belongs to?",
+    key,["Whole numbers: the counting numbers, together with the number zero","Integers: the whole numbers, their negatives, and zero","Rational numbers: ratios of two integers"],
+    "The number \\(9\\) is a counting number, so it is a natural number. Every natural number is also a whole number, an integer, and a rational number, since the sets nest inside each other, but the most specific set that fits is the smallest one containing it. The most specific subset is <b>natural numbers</b>.",
+    {stmt:true,keyText:key});},
+  function(){var key="Every integer is also a rational number";
+    return mcq("Which statement about the subsets of the real numbers is <b>true</b>?",
+    key,
+    ["Every rational number is an integer","Every whole number is also a natural number","Irrational numbers are rational numbers written in lowest terms"],
+    "The subsets nest: natural numbers sit inside whole numbers, inside integers, inside rational numbers. So any integer \\(k\\) can be written as the ratio \\("+FR("k",1)+"\\), which makes it rational. The reverse claims fail: \\("+FR(1,2)+"\\) is rational but not an integer, \\(0\\) is whole but not natural, and irrational numbers cannot be written as ratios at all. The true statement is: <b>every integer is also a rational number</b>.",
+    {stmt:true,keyText:key});}
+]));
+
+/* ================= 19. approximating irrationals (1.20, 1.21, L2, num) ================= */
+E("u2-approx",2,["1.20","1.21"],2,"gen",function(){
+  var roll=Math.random();
+  if(roll<0.6){
+    var n=ri(2,600),t=0;while(u2isSq(n)&&t<200){n=ri(2,600);t++;}
+    var lo=Math.floor(Math.sqrt(n)),ans=Math.round(Math.sqrt(n)*10)/10;
+    var dLo=n-lo*lo,dHi=(lo+1)*(lo+1)-n;
+    return numq("Give the approximate value of \\(\\sqrt{"+n+"}\\) to one decimal place.",
+      ans,0.051,
+      "Locate \\(\\sqrt{"+n+"}\\) between consecutive perfect squares: \\["+
+      "\\begin{aligned} "+(lo*lo)+" &< "+n+" < "+((lo+1)*(lo+1))+" \\\\ "+lo+" &< \\sqrt{"+n+"} < "+(lo+1)+" \\end{aligned} \\]"+
+      " Since \\("+n+"\\) is closer to \\("+(dLo<dHi?(lo*lo):((lo+1)*(lo+1)))+"\\), the root is closer to \\("+(dLo<dHi?lo:(lo+1))+"\\), and checking tenths gives \\(\\sqrt{"+n+"} \\approx "+ans+"\\). On a number line it sits between \\("+lo+"\\) and \\("+(lo+1)+"\\), nearer \\("+(dLo<dHi?lo:(lo+1))+"\\). The approximate value is <b>\\("+ans+"\\)</b>.",
+      {mode:2,n:n,ans:ans});
+  }
+  if(roll<0.9){
+    var n3=ri(2,600),t3=0;while(u2isCu(n3)&&t3<200){n3=ri(2,600);t3++;}
+    var lo3=Math.floor(Math.cbrt(n3)),ans3=Math.round(Math.cbrt(n3)*10)/10;
+    var dLo3=n3-lo3*lo3*lo3,dHi3=(lo3+1)*(lo3+1)*(lo3+1)-n3;
+    return numq("Give the approximate value of \\(\\sqrt[3]{"+n3+"}\\) to one decimal place.",
+      ans3,0.051,
+      "Locate \\(\\sqrt[3]{"+n3+"}\\) between consecutive perfect cubes: \\["+
+      "\\begin{aligned} "+(lo3*lo3*lo3)+" &< "+n3+" < "+((lo3+1)*(lo3+1)*(lo3+1))+" \\\\ "+lo3+" &< \\sqrt[3]{"+n3+"} < "+(lo3+1)+" \\end{aligned} \\]"+
+      " Since \\("+n3+"\\) is closer to \\("+(dLo3<dHi3?(lo3*lo3*lo3):((lo3+1)*(lo3+1)*(lo3+1)))+"\\), the root is closer to \\("+(dLo3<dHi3?lo3:(lo3+1))+"\\), and checking tenths gives \\(\\sqrt[3]{"+n3+"} \\approx "+ans3+"\\). On a number line it sits between \\("+lo3+"\\) and \\("+(lo3+1)+"\\). The approximate value is <b>\\("+ans3+"\\)</b>.",
+      {mode:3,n:n3,ans:ans3});
+  }
+  var k=ri(2,9),ansP=Math.round(k*Math.PI*100)/100;
+  return numq("Give the approximate value of \\("+k+"\\pi\\) to two decimal places.",
+    ansP,0.011,
+    "Use \\(\\pi \\approx 3.14159\\): \\["+
+    "\\begin{aligned} "+k+"\\pi &\\approx "+k+" \\times 3.14159 \\\\ &\\approx "+ansP+" \\end{aligned} \\]"+
+    " The approximate value is <b>\\("+ansP+"\\)</b>.",
+    {mode:1,k:k,ans:ansP});
+});
+
+/* ================= 20. ordering irrationals (1.22, L3) ================= */
+E("u2-order-irrational",2,["1.22"],3,"gen",function(){
+  var pool=[];
+  for(var n=2;n<=40;n++){if(!u2isSq(n))pool.push({frag:"\\sqrt{"+n+"}",val:Math.sqrt(n)});}
+  for(var c=2;c<=80;c++){if(!u2isCu(c)&&Math.cbrt(c)<4.4)pool.push({frag:"\\sqrt[3]{"+c+"}",val:Math.cbrt(c)});}
+  pool.push({frag:"\\pi",val:Math.PI});
+  var items=null,guard=0;
+  while(!items&&guard<500){
+    guard++;
+    var cand=shuffle(pool).slice(0,4);
+    var ok=true;
+    for(var i=0;i<4;i++)for(var j=i+1;j<4;j++){if(Math.abs(cand[i].val-cand[j].val)<0.35)ok=false;}
+    var strs=cand.map(function(x){return x.frag;});
+    if(new Set(strs).size<4)ok=false;
+    if(ok)items=cand;
+  }
+  var sortedItems=items.slice().sort(function(x,y){return x.val-y.val;});
+  function ordStr(arr){return arr.map(function(x){return "\\("+x.frag+"\\)";}).join(", ");}
+  var key=ordStr(sortedItems);
+  var rev=ordStr(sortedItems.slice().reverse());
+  var sw1=sortedItems.slice();var tmp=sw1[0];sw1[0]=sw1[1];sw1[1]=tmp;
+  var sw2=sortedItems.slice();var tmp2=sw2[2];sw2[2]=sw2[3];sw2[3]=tmp2;
+  var ds=u2pickS3(key,[rev,ordStr(sw1),ordStr(sw2)]);
+  var approxLines=sortedItems.map(function(x){return x.frag+" &\\approx "+(Math.round(x.val*100)/100);}).join(" \\\\ ");
+  return mcq("The numbers "+ordStr(items)+" are to be placed on a number line. Which list orders them from <b>least to greatest</b>?",
+    key,ds,
+    "Approximate each number by comparing it with perfect squares and cubes: \\[ \\begin{aligned} "+approxLines+" \\end{aligned} \\]"+
+    " Reading the approximations in increasing order gives the placement on the number line. From least to greatest: <b>"+key+"</b>.",
+    {items:items.map(function(x){return {frag:x.frag,val:x.val};}),keyStr:key});
+});
+/* Math 1201 Review, Unit 3 (Factors and Products) bank entries.
+   Authored November 2026 from the tranche 1 briefs. All scenarios and
+   values are original. Polynomials are rendered by the u3 helpers below:
+   terms in descending powers, signs folded in, coefficients small.
+   Helper prefix: u3. */
+
+/* ============ u3 algebra and rendering helpers ============ */
+function u3GCD(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { var t = a % b; a = b; b = t; } return a; }
+function u3GCD3(a, b, c) { return u3GCD(u3GCD(a, b), c); }
+function u3VarPart(ex, ey) {
+  var s = "";
+  if (ex > 0) s += "x" + (ex > 1 ? "^" + ex : "");
+  if (ey > 0) s += "y" + (ey > 1 ? "^" + ey : "");
+  return s;
+}
+function u3Body(c, ex, ey) {
+  var vp = u3VarPart(ex, ey);
+  return (vp && Math.abs(c) === 1) ? vp : Math.abs(c) + vp;
+}
+/* Render a list of terms [coeff, xPow, yPow], combining like terms and
+   sorting by descending total degree. */
+function u3Str(list) {
+  var map = {}, keys = [];
+  list.forEach(function (t) {
+    if (t[0] === 0) return;
+    var k = t[1] * 100 + t[2];
+    if (map[k] === undefined) { map[k] = [0, t[1], t[2]]; keys.push(k); }
+    map[k][0] += t[0];
+  });
+  var terms = keys.map(function (k) { return map[k]; }).filter(function (t) { return t[0] !== 0; });
+  terms.sort(function (p, q) { var dp = p[1] + p[2], dq = q[1] + q[2]; if (dp !== dq) return dq - dp; return q[1] - p[1]; });
+  if (!terms.length) return "0";
+  return terms.map(function (t, i) {
+    var b = u3Body(t[0], t[1], t[2]);
+    if (i === 0) return (t[0] < 0 ? "-" : "") + b;
+    return (t[0] < 0 ? " - " : " + ") + b;
+  }).join("");
+}
+/* Render terms in the given order without combining (partial products). */
+function u3StrSeq(list) {
+  var parts = list.filter(function (t) { return t[0] !== 0; });
+  if (!parts.length) return "0";
+  return parts.map(function (t, i) {
+    var b = u3Body(t[0], t[1], t[2]);
+    if (i === 0) return (t[0] < 0 ? "-" : "") + b;
+    return (t[0] < 0 ? " - " : " + ") + b;
+  }).join("");
+}
+function u3TermsOf(coeffs, v) {
+  return coeffs.map(function (c, i) { var p = coeffs.length - 1 - i; return v === "y" ? [c, 0, p] : [c, p, 0]; });
+}
+function u3PC(coeffs, v) { return u3Str(u3TermsOf(coeffs, v)); }
+function u3Par(coeffs, v) { return "(" + u3PC(coeffs, v) + ")"; }
+function u3Mul(P, Q) {
+  var out = [];
+  P.forEach(function (p) { Q.forEach(function (q) { out.push([p[0] * q[0], p[1] + q[1], p[2] + q[2]]); }); });
+  return out;
+}
+function u3Conv(A, B) {
+  var out = [], i;
+  for (i = 0; i < A.length + B.length - 1; i++) out.push(0);
+  A.forEach(function (a, j) { B.forEach(function (b, k) { out[j + k] += a * b; }); });
+  return out;
+}
+function u3Alg(lines) { return "\\[ \\begin{aligned} " + lines.join(" \\\\ ") + " \\end{aligned} \\]"; }
+function u3M(raw) { return "\\(" + raw + "\\)"; }
+function u3PerturbCoeffs(coeffs) {
+  var out = [], i, c2;
+  for (i = 1; i < coeffs.length; i++) {
+    if (coeffs[i] !== 0) { c2 = coeffs.slice(); c2[i] = -c2[i]; out.push(c2); }
+    c2 = coeffs.slice(); c2[i] += 1; out.push(c2);
+    c2 = coeffs.slice(); c2[i] -= 1; out.push(c2);
+    c2 = coeffs.slice(); c2[i] += 2; out.push(c2);
+    c2 = coeffs.slice(); c2[i] -= 2; out.push(c2);
+  }
+  c2 = coeffs.slice(); c2[0] += 1; out.push(c2);
+  if (coeffs[0] > 1) { c2 = coeffs.slice(); c2[0] -= 1; out.push(c2); }
+  if (coeffs.length > 2) { c2 = coeffs.slice(); var t = c2[1]; c2[1] = c2[2]; c2[2] = t; out.push(c2); }
+  return out;
+}
+function u3DistrCoeffs(keyCoeffs, v, count) {
+  var key = u3PC(keyCoeffs, v), seen = {}, out = [];
+  shuffle(u3PerturbCoeffs(keyCoeffs)).forEach(function (c) {
+    var s = u3PC(c, v);
+    if (s !== key && !seen[s]) { seen[s] = 1; out.push(u3M(s)); }
+  });
+  var guard = 0;
+  while (out.length < count && guard < 60) {
+    guard++;
+    var c2 = keyCoeffs.slice(), i = ri(1, keyCoeffs.length - 1);
+    c2[i] += pick([-3, -2, -1, 1, 2, 3]);
+    var s2 = u3PC(c2, v);
+    if (s2 !== key && !seen[s2]) { seen[s2] = 1; out.push(u3M(s2)); }
+  }
+  return out.slice(0, count);
+}
+function u3FacRaw(gRaw, facs, v) {
+  return (gRaw || "") + facs.map(function (f) { return u3Par(f, v); }).join("");
+}
+function u3FacExpand(facs) {
+  var acc = [1];
+  facs.forEach(function (f) { acc = u3Conv(acc, f); });
+  return acc;
+}
+function u3SameArr(a, b) { return a.length === b.length && a.every(function (x, i) { return x === b[i]; }); }
+/* Distractors for a factored form: perturb constants or swap them, and
+   reject any candidate that expands to the same polynomial. */
+function u3FacDistr(gRaw, facs, v, targetCoeffs, count) {
+  var key = u3FacRaw(gRaw, facs, v), seen = {}, out = [];
+  var cands = [];
+  facs.forEach(function (f, fi) {
+    [1, -1, 2, -2].forEach(function (d) {
+      var nf = facs.map(function (g) { return g.slice(); });
+      nf[fi][nf[fi].length - 1] += d;
+      cands.push(nf);
+    });
+    var sf = facs.map(function (g) { return g.slice(); });
+    sf[fi][sf[fi].length - 1] = -sf[fi][sf[fi].length - 1];
+    cands.push(sf);
+  });
+  if (facs.length > 1) {
+    var sw = facs.map(function (g) { return g.slice(); });
+    var t = sw[0][sw[0].length - 1]; sw[0][sw[0].length - 1] = sw[1][sw[1].length - 1]; sw[1][sw[1].length - 1] = t;
+    cands.push(sw);
+  }
+  shuffle(cands).forEach(function (nf) {
+    if (u3SameArr(u3FacExpand(nf), targetCoeffs)) return;
+    var s = u3FacRaw(gRaw, nf, v);
+    if (s !== key && !seen[s]) { seen[s] = 1; out.push(u3M(s)); }
+  });
+  return out.slice(0, count);
+}
+function u3Nz(a, b) { var n = 0; while (n === 0) n = ri(a, b); return n; }
+
+/* ============ 1. monomial times a binomial or trinomial (3.4, L1) ============ */
+E("u3-monomial-expand", 3, ["3.4"], 1, "gen", function () {
+  var mode = ri(0, 2), P, Q, pdesc;
+  if (mode === 0) {
+    var a = u3Nz(-6, 6); if (Math.abs(a) < 2) a = a < 0 ? -3 : 3;
+    var k = ri(1, 2), p = ri(1, 4), q = u3Nz(-7, 7);
+    P = [[a, k, 0]]; Q = [[p, 1, 0], [q, 0, 0]];
+    pdesc = u3Str(P) + u3Par([p, q], "x");
+  } else if (mode === 1) {
+    var a2 = u3Nz(-5, 5); if (Math.abs(a2) < 2) a2 = a2 < 0 ? -2 : 2;
+    var p2 = ri(1, 3), q2 = u3Nz(-6, 6), r2 = u3Nz(-8, 8);
+    P = [[a2, 1, 0]]; Q = [[p2, 2, 0], [q2, 1, 0], [r2, 0, 0]];
+    pdesc = u3Str(P) + u3Par([p2, q2, r2], "x");
+  } else {
+    var a3 = u3Nz(-5, 5); if (Math.abs(a3) < 2) a3 = a3 < 0 ? -4 : 4;
+    var p3 = ri(1, 3), q3 = u3Nz(-4, 4);
+    P = [[a3, 1, 1]]; Q = [[p3, 1, 0], [q3, 0, 1]];
+    pdesc = u3Str(P) + "(" + u3Str(Q) + ")";
+  }
+  var partials = u3Mul(P, Q), keyRaw = u3Str(partials);
+  var seen = {}, distr = [];
+  shuffle(u3PerturbTerms(partials)).forEach(function (s) {
+    if (s !== keyRaw && !seen[s]) { seen[s] = 1; distr.push(u3M(s)); }
+  });
+  var prompt = "Expand and simplify \\(" + pdesc + "\\).";
+  var sol = "Multiply the monomial by every term inside the brackets." +
+    u3Alg([pdesc + " &= " + u3StrSeq(partials), "&= " + keyRaw]) +
+    "The expanded form is **" + u3M(keyRaw) + "**.";
+  return mcq(prompt, u3M(keyRaw), distr.slice(0, 3), sol, { t: "expand", P: P, Q: Q });
+});
+function u3PerturbTerms(terms) {
+  var base = [];
+  var map = {}, keys = [];
+  terms.forEach(function (t) { var k = t[1] * 100 + t[2]; if (map[k] === undefined) { map[k] = [0, t[1], t[2]]; keys.push(k); } map[k][0] += t[0]; });
+  keys.forEach(function (k) { if (map[k][0] !== 0) base.push(map[k]); });
+  var out = [];
+  base.forEach(function (t, i) {
+    [function (c) { return -c; }, function (c) { return c + 1; }, function (c) { return c - 1; }, function (c) { return c + 2; }].forEach(function (f) {
+      var nt = base.map(function (g) { return g.slice(); });
+      nt[i][0] = f(nt[i][0]);
+      out.push(u3Str(nt));
+    });
+    var dropped = base.filter(function (g, j) { return j !== i; });
+    if (dropped.length) out.push(u3Str(dropped));
+  });
+  return out;
+}
+
+/* ============ 2. multiplication and factoring relationship (3.8, L1, var) ============ */
+E("u3-mult-factor-rel", 3, ["3.8"], 1, "var", varset([
+  function () {
+    var key = "Factoring is the reverse of multiplying: the factors of a polynomial multiply together to give the polynomial.";
+    return mcq("Which statement best describes the relationship between multiplying polynomials and factoring polynomials?",
+      key,
+      ["Factoring is the reverse of multiplying: the factors of a polynomial add together to give the polynomial.",
+       "Multiplying is the reverse of factoring: the terms of a product multiply together to give each factor.",
+       "Multiplying and factoring are the same process: both rewrite a polynomial as a sum of its terms."],
+      "Multiplying builds a product from factors, and factoring undoes that step by splitting a polynomial back into the expressions that multiply to give it. The statement that says this is **" + key + "**",
+      { t: "stmt", ans: key });
+  },
+  function () {
+    var key = "Multiply \\((x + 2)\\) by \\((x + 3)\\) and confirm that the product is \\(x^2 + 5x + 6\\).";
+    return mcq("A student factors \\(x^2 + 5x + 6\\) as \\((x + 2)(x + 3)\\). Which action checks the factoring by using its relationship with multiplication?",
+      key,
+      ["Add \\((x + 2)\\) and \\((x + 3)\\) and confirm that the sum is \\(x^2 + 5x + 6\\).",
+       "Multiply \\((x + 2)\\) by \\((x + 3)\\) and confirm that the product is \\(x^2 + 6x + 5\\).",
+       "Substitute \\(x = 0\\) into \\(x^2 + 5x + 6\\) and confirm that the value is \\(6\\)."],
+      "Factoring and multiplying are inverse processes, so a factorization is checked by multiplying the factors back together and comparing with the original polynomial. The checking action is **" + key + "**",
+      { t: "stmt", ans: key });
+  },
+  function () {
+    var key = "\\((x + 1)(x + 4) = x^2 + 5x + 4\\) and \\(x^2 + 5x + 4 = (x + 1)(x + 4)\\)";
+    return mcq("Which pair of equations shows multiplication and factoring as inverse processes?",
+      key,
+      ["\\((x + 1)(x + 4) = x^2 + 4x + 4\\) and \\(x^2 + 4x + 4 = (x + 1)(x + 4)\\)",
+       "\\((x + 2)(x + 3) = x^2 + 6x + 6\\) and \\(x^2 + 6x + 6 = (x + 2)(x + 3)\\)",
+       "\\((x + 1)(x + 4) = x^2 + 5x + 4\\) and \\(x^2 + 5x + 4 = (x + 2)(x + 3)\\)"],
+      "The two equations must use the same polynomial and the same factors, with one equation expanding the product and the other splitting the polynomial into those factors. Since \\((x + 1)(x + 4) = x^2 + 5x + 4\\), the inverse pair is **" + key + "**.",
+      { t: "stmt", ans: key });
+  },
+  function () {
+    var key = "Because factoring rewrites the polynomial as a product, and expanding a product reverses that rewriting exactly.";
+    return mcq("A polynomial is factored correctly. Why does expanding the factored form always return the original polynomial?",
+      key,
+      ["Because factoring rewrites the polynomial as a sum, and expanding a sum reverses that rewriting exactly.",
+       "Because each factor has the same degree as the polynomial, so expanding restores every original term.",
+       "Because expanding removes the common factor from each term, which returns the terms to their places."],
+      "A factored form is a product of expressions that together equal the polynomial, so multiplying them back out must reproduce the polynomial exactly. The reason is **" + key + "**",
+      { t: "stmt", ans: key });
+  }
+]));
+
+/* ============ 3. binomials and two-digit numbers (3.1, L1, var) ============ */
+E("u3-two-digit", 3, ["3.1"], 1, "var", varset([
+  function () {
+    var key = "\\((30 + 4)(20 + 6)\\)";
+    return mcq("A student multiplies \\(34\\) by \\(26\\) by splitting each number into tens and ones, the same split used for binomials. Which expression matches this method?",
+      key,
+      ["\\((30 + 4)(20 + 4)\\)", "\\((30 + 4) + (20 + 6)\\)", "\\((30 \\times 20) + (4 \\times 6)\\)"],
+      "Split each number into tens and ones: \\(34 = 30 + 4\\) and \\(26 = 20 + 6\\). The product keeps both splits as factors, exactly like a product of binomials." +
+      u3Alg(["(30 + 4)(20 + 6) &= 600 + 180 + 80 + 24", "&= 884"]) +
+      "This matches \\(34 \\times 26 = 884\\). The matching expression is **" + key + "**.",
+      { t: "stmt", ans: key });
+  },
+  function () {
+    return mcq("The product \\(47 \\times 35\\) is computed by splitting each factor into tens and ones: \\((40 + 7)(30 + 5)\\). What is the value of the product?",
+      "1645",
+      ["1235", "1435", "1640"],
+      "Each part of one split multiplies each part of the other, as with binomials." +
+      u3Alg(["(40 + 7)(30 + 5) &= 1200 + 200 + 210 + 35", "&= 1645"]) +
+      "The value of the product is **1645**.",
+      { t: "stmt", ans: "1645" });
+  },
+  function () {
+    var key = "\\(13 \\times 15\\)";
+    return mcq("Setting \\(x = 10\\) in the binomial product \\((x + 3)(x + 5)\\) produces a product of two two-digit numbers. Which product is it?",
+      key,
+      ["\\(10 \\times 15\\)", "\\(13 \\times 8\\)", "\\(30 \\times 50\\)"],
+      "Replace \\(x\\) by \\(10\\) in each binomial: \\(x + 3 = 13\\) and \\(x + 5 = 15\\). A binomial in \\(x\\) with \\(x = 10\\) is a two-digit number split into tens and ones. The product is **" + key + "**.",
+      { t: "stmt", ans: key });
+  },
+  function () {
+    var key = "1000, 150, 40, 6";
+    return mcq("The product \\(52 \\times 23\\) is split as \\((50 + 2)(20 + 3)\\). Which list gives all four partial products?",
+      key,
+      ["1000, 150, 40", "1000, 100, 60, 6", "100, 150, 40, 6"],
+      "Multiply each part of the first split by each part of the second: \\(50 \\times 20 = 1000\\), \\(50 \\times 3 = 150\\), \\(2 \\times 20 = 40\\) and \\(2 \\times 3 = 6\\). Their sum is \\(1196 = 52 \\times 23\\). The four partial products are **" + key + "**.",
+      { t: "stmt", ans: key });
+  }
+]));
+
+/* ============ 4. area model (3.2, 3.3, L1, var) ============ */
+E("u3-area-model", 3, ["3.2", "3.3"], 1, "var", varset([
+  function () {
+    var key = "\\(x^2 + 6x + 8\\)";
+    return mcq("A rectangle with length \\(x + 4\\) and width \\(x + 2\\) is divided into four regions with areas \\(x^2\\), \\(2x\\), \\(4x\\) and \\(8\\). What is the area of the whole rectangle, in simplified form?",
+      key,
+      ["\\(x^2 + 8x + 8\\)", "\\(x^2 + 6x + 6\\)", "\\(x^2 + 4x + 8\\)"],
+      "The area of the whole rectangle is the sum of the four partial areas." +
+      u3Alg(["x^2 + 2x + 4x + 8 &= x^2 + 6x + 8"]) +
+      "The total area is **" + key + "**.",
+      { t: "stmt", ans: key });
+  },
+  function () {
+    var key = "\\((x + 3)(x + 4)\\)";
+    return mcq("Four regions of an area model have areas \\(x^2\\), \\(3x\\), \\(4x\\) and \\(12\\). The total area, \\(x^2 + 7x + 12\\), is the product of the rectangle's length and width. Which expressions give the length and width?",
+      key,
+      ["\\((x + 2)(x + 6)\\)", "\\((x + 1)(x + 12)\\)", "\\((x + 3)(x + 7)\\)"],
+      "The side pieces must produce the partial areas: \\(3x\\) comes from a side piece of \\(3\\) meeting the \\(x\\) side, and \\(4x\\) from a side piece of \\(4\\), with \\(3 \\times 4 = 12\\) for the corner region. The sides are \\(x + 3\\) and \\(x + 4\\), so the length and width are given by **" + key + "**.",
+      { t: "stmt", ans: key });
+  },
+  function () {
+    var key = "\\((x + 2)(x + 3)\\)";
+    return mcq("An algebra-tile rectangle uses one \\(x^2\\) tile, five \\(x\\) tiles and six unit tiles, with no gaps. Which product does the rectangle model?",
+      key,
+      ["\\((x + 1)(x + 6)\\)", "\\((x + 2)(x + 2)\\)", "\\((x + 5)(x + 6)\\)"],
+      "The tiles total \\(x^2 + 5x + 6\\). The side pieces must add to \\(5\\) (the number of \\(x\\) tiles along the sides) and multiply to \\(6\\) (the unit tiles in the corner), giving pieces of \\(2\\) and \\(3\\). The product modelled is **" + key + "**.",
+      { t: "stmt", ans: key });
+  },
+  function () {
+    var key = "\\(x + 5\\)";
+    return mcq("In an area model for \\((x + 2)(x + 5)\\), one side of the rectangle is \\(x + 2\\). The four regions have areas \\(x^2\\), \\(5x\\), \\(2x\\) and \\(10\\). What is the other side of the rectangle?",
+      key,
+      ["\\(x + 2\\)", "\\(x + 7\\)", "\\(x + 10\\)"],
+      "The region \\(5x\\) is formed where the \\(x\\) part of the known side meets a piece of length \\(5\\) on the other side, and the corner \\(10 = 2 \\times 5\\) confirms that piece. The other side is **" + key + "**.",
+      { t: "stmt", ans: key });
+  }
+]));
+
+/* ============ 5. binomial times binomial (3.4, L2) ============ */
+E("u3-binomial-expand", 3, ["3.4"], 2, "gen", function () {
+  var v = pick(["x", "x", "y"]);
+  var A = [ri(1, 3), u3Nz(-6, 6)], B = [ri(1, 3), u3Nz(-6, 6)];
+  var prod = u3Conv(A, B), keyRaw = u3PC(prod, v);
+  var partials = u3Mul(u3TermsOf(A, v), u3TermsOf(B, v));
+  var prompt = "Expand and simplify \\(" + u3Par(A, v) + u3Par(B, v) + "\\).";
+  var sol = "Multiply each term of the first binomial by each term of the second binomial, then combine like terms." +
+    u3Alg([u3Par(A, v) + u3Par(B, v) + " &= " + u3StrSeq(partials), "&= " + keyRaw]) +
+    "The expanded form is **" + u3M(keyRaw) + "**.";
+  return mcq(prompt, u3M(keyRaw), u3DistrCoeffs(prod, v, 3), sol,
+    { t: "expand", P: u3TermsOf(A, v), Q: u3TermsOf(B, v) });
+});
+
+/* ============ 6. binomial times trinomial (3.4, L2) ============ */
+E("u3-binom-tri-expand", 3, ["3.4"], 2, "gen", function () {
+  var A = [ri(1, 3), u3Nz(-5, 5)];
+  var B = [ri(1, 3), u3Nz(-5, 5), u3Nz(-6, 6)];
+  var prod = u3Conv(A, B), keyRaw = u3PC(prod, "x");
+  var partials = u3Mul(u3TermsOf(A, "x"), u3TermsOf(B, "x"));
+  var prompt = "Expand and simplify \\(" + u3Par(A, "x") + u3Par(B, "x") + "\\).";
+  var sol = "Multiply each term of the binomial by each of the three terms of the trinomial, giving six partial products, then combine like terms." +
+    u3Alg([u3Par(A, "x") + u3Par(B, "x") + " &= " + u3StrSeq(partials), "&= " + keyRaw]) +
+    "The expanded form is **" + u3M(keyRaw) + "**.";
+  return mcq(prompt, u3M(keyRaw), u3DistrCoeffs(prod, "x", 3), sol,
+    { t: "expand", P: u3TermsOf(A, "x"), Q: u3TermsOf(B, "x") });
+});
+
+/* ============ 7. special products, coefficient of the linear term (3.4, L2, num) ============ */
+E("u3-special-products", 3, ["3.4"], 2, "gen", function () {
+  var v = pick(["x", "y"]);
+  var a = ri(1, 6), b = ri(1, 9);
+  var mode = pick(["sq", "sq", "conj"]);
+  var A, B, expr, steps;
+  if (mode === "sq") {
+    var s = pick([1, -1]);
+    A = [a, s * b]; B = [a, s * b];
+    expr = u3Par(A, v) + "^2";
+    var parts = u3Mul(u3TermsOf(A, v), u3TermsOf(B, v));
+    steps = [expr + " &= " + u3StrSeq(parts), "&= " + u3PC(u3Conv(A, B), v)];
+  } else {
+    A = [a, b]; B = [a, -b];
+    expr = u3Par(A, v) + u3Par(B, v);
+    var parts2 = u3Mul(u3TermsOf(A, v), u3TermsOf(B, v));
+    steps = [expr + " &= " + u3StrSeq(parts2), "&= " + u3PC(u3Conv(A, B), v)];
+  }
+  var prod = u3Conv(A, B), ans = prod[1];
+  var prompt = "Expand \\(" + expr + "\\). What is the coefficient of \\(" + v + "\\) in the expansion?";
+  var sol = (mode === "sq"
+    ? "Squaring a binomial produces three terms; the middle term comes from both cross products together."
+    : "The two factors are conjugates, so the two cross products are opposites and cancel.") +
+    u3Alg(steps) +
+    "The coefficient of \\(" + v + "\\) in the expansion is **" + ans + "**.";
+  return numq(prompt, ans, 0.01, sol, { t: "coef", P: A, Q: B, v: v });
+});
+
+/* ============ 8. verify by substitution (3.5, L2, num) ============ */
+E("u3-verify-sub", 3, ["3.5"], 2, "gen", function () {
+  var b = u3Nz(-8, 8), c = u3Nz(-8, 8);
+  var B = b + c, C = b * c;
+  var bad = Math.random() < 0.5, Bp = B, Cp = C;
+  if (bad) {
+    if (Math.random() < 0.5) Bp = B + pick([-2, -1, 1, 2]); else Cp = C + pick([-3, -1, 1, 3]);
+  }
+  var v = ri(-3, 5);
+  var lhs = (v + b) * (v + c), rhs = v * v + Bp * v + Cp;
+  var fac1 = u3Par([1, b], "x"), fac2 = u3Par([1, c], "x");
+  var claim = u3PC([1, Bp, Cp], "x");
+  var prompt = "A student claims that \\(" + fac1 + fac2 + " = " + claim + "\\). To test the claim, substitute \\(x = " + v + "\\). What value does the left side, \\(" + fac1 + fac2 + "\\), take when \\(x = " + v + "\\)?";
+  var sub1 = "(" + v + (b < 0 ? " - " + (-b) : " + " + b) + ")(" + v + (c < 0 ? " - " + (-c) : " + " + c) + ")";
+  var sol = "Substitute \\(x = " + v + "\\) into both sides of the claim." +
+    u3Alg(["\\text{left side} &= " + sub1 + " = " + lhs,
+           "\\text{right side} &= " + v + "^2 + " + Bp + "(" + v + ") + " + Cp + " = " + rhs]) +
+    (bad
+      ? "The two values differ, so the claim does not hold. "
+      : "The two values agree, which supports the claim (one value is a check, not a proof). ") +
+    "The value of the left side is **" + lhs + "**.";
+  return numq(prompt, lhs, 0.01, sol, { t: "verify", b: b, c: c, v: v, rhs: rhs });
+});
+
+/* ============ 9. greatest common factor (3.10, L2) ============ */
+E("u3-gcf", 3, ["3.10"], 2, "gen", function () {
+  var gp = ri(0, 2), gn, tries = 0;
+  if (gp === 0) gn = ri(2, 7); else gn = pick([1, 2, 3, 4, 5, 6]);
+  var A = ri(1, 6), B = u3Nz(-6, 6), C = u3Nz(-6, 6);
+  while (u3GCD3(A, Math.abs(B), Math.abs(C)) !== 1 && tries < 60) { tries++; A = ri(1, 6); B = u3Nz(-6, 6); C = u3Nz(-6, 6); }
+  var quo = [A, B, C];
+  var polyTerms = [[gn * A, gp + 2, 0], [gn * B, gp + 1, 0], [gn * C, gp, 0]];
+  var polyRaw = u3Str(polyTerms);
+  var gRaw = u3Str([[gn, gp, 0]]);
+  var keyRaw = gRaw + u3Par(quo, "x");
+  var cands = [], seen = {};
+  function addCand(s) { if (s !== keyRaw && !seen[s]) { seen[s] = 1; cands.push(u3M(s)); } }
+  /* partial factor: only part of the common factor is removed */
+  if (gn > 1) {
+    var divs = [];
+    for (var d = 1; d < gn; d++) if (gn % d === 0) divs.push(d);
+    var dv = pick(divs), sc = gn / dv;
+    addCand(u3Str([[dv, gp, 0]]) + u3Par([A * sc, B * sc, C * sc], "x"));
+  } else {
+    addCand(u3Str([[1, gp - 1, 0]]) + "(" + u3Str([[A, 3, 0], [B, 2, 0], [C, 1, 0]]) + ")");
+  }
+  /* quotient slips: one term not divided correctly */
+  addCand(gRaw + u3Par([A, B + (B > 0 ? 1 : -1), C], "x"));
+  addCand(gRaw + u3Par([A, B, gn * C], "x"));
+  addCand(gRaw + u3Par([A, B, -C], "x"));
+  addCand(gRaw + u3Par([A + 1, B, C], "x"));
+  var prompt = "Determine the greatest common factor of the terms of \\(" + polyRaw + "\\), and express the polynomial in factored form.";
+  var sol = "Every term contains the factor \\(" + gRaw + "\\). Dividing each term by \\(" + gRaw + "\\) leaves \\(" + u3PC(quo, "x") + "\\), whose terms share no further common factor." +
+    u3Alg([polyRaw + " &= " + keyRaw]) +
+    "In factored form, the polynomial is **" + u3M(keyRaw) + "**.";
+  return mcq(prompt, u3M(keyRaw), shuffle(cands).slice(0, 3), sol,
+    { t: "fac", g: gRaw, parts: [quo], v: "x" });
+});
+
+/* ============ 10. factor a monic trinomial, larger constant (3.12, L2, num) ============ */
+E("u3-factor-monic", 3, ["3.12"], 2, "gen", function () {
+  var v = pick(["x", "y"]);
+  var r = u3Nz(-9, 9), s = u3Nz(-9, 9), guard = 0;
+  while (r === s && guard < 40) { guard++; s = u3Nz(-9, 9); }
+  var B = r + s, C = r * s;
+  var poly = u3PC([1, B, C], v);
+  var facs = [[1, Math.min(r, s)], [1, Math.max(r, s)]];
+  var ans = Math.max(r, s);
+  var prompt = "When the trinomial \\(" + poly + "\\) is factored as a product of two binomials, the two constant terms are two numbers. What is the larger of those two numbers?";
+  var sol = "Find two numbers that multiply to \\(" + C + "\\) and add to \\(" + B + "\\): the numbers are \\(" + Math.min(r, s) + "\\) and \\(" + Math.max(r, s) + "\\)." +
+    u3Alg([poly + " &= " + u3FacRaw("", facs, v)]) +
+    "The larger of the two constant terms is **" + ans + "**.";
+  return numq(prompt, ans, 0.01, sol, { t: "pair", r: r, s: s, B: B, C: C });
+});
+
+/* ============ 11. factor a non-monic trinomial (3.12, L2) ============ */
+E("u3-factor-hard", 3, ["3.12"], 2, "gen", function () {
+  var pairs = [[1, 2], [2, 1], [1, 3], [3, 1], [2, 2], [1, 4], [4, 1], [2, 3], [3, 2], [1, 5], [5, 1], [1, 6], [6, 1]];
+  var pr, b, d, prod, tries = 0;
+  do {
+    tries++;
+    pr = pick(pairs); b = u3Nz(-6, 6); d = u3Nz(-6, 6);
+    prod = u3Conv([pr[0], b], [pr[1], d]);
+  } while ((u3GCD3(prod[0], Math.abs(prod[1]), Math.abs(prod[2])) !== 1 || prod[1] === 0) && tries < 80);
+  var facs = [[pr[0], b], [pr[1], d]];
+  facs.sort(function (f, g) { if (f[0] !== g[0]) return g[0] - f[0]; return f[1] - g[1]; });
+  var keyRaw = u3FacRaw("", facs, "x");
+  var poly = u3PC(prod, "x");
+  var prompt = "Factor the trinomial \\(" + poly + "\\) completely.";
+  var sol = "Look for two binomials \\((px + q)(rx + s)\\) with \\(pr = " + prod[0] + "\\), \\(qs = " + prod[2] + "\\) and cross sum \\(ps + qr = " + prod[1] + "\\). The pair that works is shown, and multiplying it back out returns the trinomial." +
+    u3Alg([poly + " &= " + keyRaw,
+           keyRaw + " &= " + u3StrSeq(u3Mul(u3TermsOf(facs[0], "x"), u3TermsOf(facs[1], "x"))),
+           "&= " + poly]) +
+    "The factored form is **" + u3M(keyRaw) + "**.";
+  return mcq(prompt, u3M(keyRaw), u3FacDistr("", facs, "x", prod, 3), sol,
+    { t: "fac", g: "", parts: facs, v: "x" });
+});
+
+/* ============ 12. express as a product of factors, verified (3.9, 3.11, L2) ============ */
+E("u3-factor-product", 3, ["3.9", "3.11"], 2, "gen", function () {
+  var mode = pick(["bb", "mt"]);
+  if (mode === "bb") {
+    var a = ri(2, 4), b = u3Nz(-6, 6), c = u3Nz(-6, 6), prod, tries = 0;
+    do { tries++; b = u3Nz(-6, 6); c = u3Nz(-6, 6); prod = u3Conv([a, b], [1, c]); }
+    while (u3GCD3(prod[0], Math.abs(prod[1]), Math.abs(prod[2])) !== 1 && tries < 80);
+    var facs = [[a, b], [1, c]];
+    var keyRaw = u3FacRaw("", facs, "x");
+    var poly = u3PC(prod, "x");
+    var sol = "Find the two binomials whose product gives the polynomial, then verify by multiplying the factors back out." +
+      u3Alg([poly + " &= " + keyRaw,
+             keyRaw + " &= " + u3StrSeq(u3Mul(u3TermsOf(facs[0], "x"), u3TermsOf(facs[1], "x"))),
+             "&= " + poly]) +
+      "As a product of its factors, the polynomial is **" + u3M(keyRaw) + "**.";
+    return mcq("Express the polynomial \\(" + poly + "\\) as a product of its factors.",
+      u3M(keyRaw), u3FacDistr("", facs, "x", prod, 3), sol,
+      { t: "fac", g: "", parts: facs, v: "x" });
+  }
+  var gn = ri(2, 5), gp = ri(1, 2);
+  var A = ri(1, 3), B = u3Nz(-5, 5), C = u3Nz(-6, 6), t2 = 0;
+  while (u3GCD3(A, Math.abs(B), Math.abs(C)) !== 1 && t2 < 60) { t2++; A = ri(1, 3); B = u3Nz(-5, 5); C = u3Nz(-6, 6); }
+  var quo = [A, B, C];
+  var polyTerms = [[gn * A, gp + 2, 0], [gn * B, gp + 1, 0], [gn * C, gp, 0]];
+  var polyRaw = u3Str(polyTerms);
+  var gRaw = u3Str([[gn, gp, 0]]);
+  var keyRaw2 = gRaw + u3Par(quo, "x");
+  var prodTerms = u3Mul([[gn, gp, 0]], u3TermsOf(quo, "x"));
+  var cands = [], seen = {};
+  function addC(s) { if (s !== keyRaw2 && !seen[s]) { seen[s] = 1; cands.push(u3M(s)); } }
+  addC(gRaw + u3Par([A, B + (B > 0 ? 1 : -1), C], "x"));
+  addC(gRaw + u3Par([A, B, -C], "x"));
+  addC(u3Str([[gn, gp + 1, 0]]) + u3Par(quo, "x"));
+  addC(gRaw + u3Par([A + 1, B, C], "x"));
+  var sol2 = "The terms share the factor \\(" + gRaw + "\\). Removing it leaves \\(" + u3PC(quo, "x") + "\\). Verify by multiplying the factors back out." +
+    u3Alg([keyRaw2 + " &= " + u3StrSeq(prodTerms), "&= " + polyRaw]) +
+    "As a product of its factors, the polynomial is **" + u3M(keyRaw2) + "**.";
+  return mcq("Express the polynomial \\(" + polyRaw + "\\) as a product of its factors.",
+    u3M(keyRaw2), shuffle(cands).slice(0, 3), sol2,
+    { t: "fac", g: gRaw, parts: [quo], v: "x" });
+});
+
+/* ============ 13. factor completely, common factor first (3.9, 3.10, L2) ============ */
+E("u3-factor-gcf-first", 3, ["3.9", "3.10"], 2, "gen", function () {
+  var g0 = ri(2, 6);
+  var mode = pick(["tri", "tri", "ds"]);
+  var keyRaw, poly, quoRaw, quoCoeffs, facs, note;
+  if (mode === "tri") {
+    var r = u3Nz(-7, 7), s = u3Nz(-7, 7);
+    var B = r + s, C = r * s;
+    var prod = [g0, g0 * B, g0 * C];
+    poly = u3PC(prod, "x");
+    quoCoeffs = [1, B, C];
+    quoRaw = u3PC(quoCoeffs, "x");
+    facs = [[1, Math.min(r, s)], [1, Math.max(r, s)]];
+    keyRaw = g0 + u3FacRaw("", facs, "x");
+    note = "Inside the brackets, the two numbers multiply to \\(" + C + "\\) and add to \\(" + B + "\\)";
+  } else {
+    var a = ri(1, 3), b = ri(1, 7);
+    poly = u3PC([g0 * a * a, 0, -g0 * b * b], "x");
+    quoCoeffs = [a * a, 0, -b * b];
+    quoRaw = u3PC(quoCoeffs, "x");
+    facs = [[a, b], [a, -b]];
+    keyRaw = g0 + u3FacRaw("", facs, "x");
+    note = "Inside the brackets is a difference of squares, \\((" + a + "x)^2 - " + b + "^2\\)";
+  }
+  var cands = [], seen = {};
+  function addC(s) { if (s !== keyRaw && !seen[s]) { seen[s] = 1; cands.push(u3M(s)); } }
+  addC(g0 + "(" + quoRaw + ")");
+  u3FacDistr(String(g0), facs, "x", mode === "tri" ? [1, facs[0][1] + facs[1][1], facs[0][1] * facs[1][1]] : u3FacExpand(facs), 3)
+    .forEach(function (s) { addC(s.replace(/^\\\(|\\\)$/g, "")); });
+  var divs = [];
+  for (var d = 1; d < g0; d++) if (g0 % d === 0) divs.push(d);
+  if (divs.length) {
+    var dv2 = pick(divs), sc2 = g0 / dv2;
+    addC(dv2 + "(" + u3PC(quoCoeffs.map(function (x) { return x * sc2; }), "x") + ")");
+  }
+  var prompt = "Factor the polynomial \\(" + poly + "\\) completely.";
+  var sol = "First remove the greatest common factor, \\(" + g0 + "\\), then factor what remains. " + note + "." +
+    u3Alg([poly + " &= " + g0 + "(" + quoRaw + ")", "&= " + keyRaw]) +
+    "Factored completely, the polynomial is **" + u3M(keyRaw) + "**.";
+  return mcq(prompt, u3M(keyRaw), shuffle(cands).slice(0, 3), sol,
+    { t: "fac", g: String(g0), parts: facs, v: "x" });
+});
+
+/* ============ 14. difference of squares (3.14, L2) ============ */
+E("u3-diff-squares", 3, ["3.14"], 2, "gen", function () {
+  var mode = pick(["pure", "pure", "twovar"]);
+  if (mode === "twovar") {
+    var a = ri(1, 4), b = ri(1, 6);
+    var polyTerms = [[a * a, 2, 0], [-b * b, 0, 2]];
+    var poly = u3Str(polyTerms);
+    var f1 = u3Str([[a, 1, 0], [b, 0, 1]]), f2 = u3Str([[a, 1, 0], [-b, 0, 1]]);
+    var keyRaw = "(" + f1 + ")(" + f2 + ")";
+    var P = [[a, 1, 0], [b, 0, 1]], Q = [[a, 1, 0], [-b, 0, 1]];
+    var cands = [], seen = {};
+    function addT(s) { if (s !== keyRaw && !seen[s]) { seen[s] = 1; cands.push(u3M(s)); } }
+    addT("(" + f2 + ")(" + f2 + ")");
+    addT("(" + f1 + ")(" + f1 + ")");
+    addT("(" + u3Str([[a, 1, 0], [b * b, 0, 1]]) + ")(" + u3Str([[a, 1, 0], [-b * b, 0, 1]]) + ")");
+    addT("(" + u3Str([[1, 1, 0], [b, 0, 1]]) + ")(" + u3Str([[1, 1, 0], [-b, 0, 1]]) + ")");
+    addT("(" + u3Str([[a, 1, 0], [b + 1, 0, 1]]) + ")(" + f2 + ")");
+    addT("(" + u3Str([[a + 1, 1, 0], [b, 0, 1]]) + ")(" + u3Str([[a + 1, 1, 0], [-b, 0, 1]]) + ")");
+    var solT = "Each term is a perfect square: \\(" + poly + " = (" + a + "x)^2 - (" + b + "y)^2\\). A difference of squares factors into a sum and a difference of the two square roots. As a trinomial the middle term is \\(0\\): a pair of numbers multiplying to the negative constant term and adding to \\(0\\) must be opposites, which is why the two factors differ only in sign." +
+      u3Alg([poly + " &= " + keyRaw]) +
+      "The factored form is **" + u3M(keyRaw) + "**.";
+    return mcq("Factor the polynomial \\(" + poly + "\\).",
+      u3M(keyRaw), shuffle(cands).slice(0, 3), solT, { t: "facT", P: P, Q: Q, poly: poly });
+  }
+  var v = pick(["x", "y"]);
+  var a2 = ri(1, 5), b2 = ri(1, 9);
+  var prod = [a2 * a2, 0, -b2 * b2];
+  var poly2 = u3PC(prod, v);
+  var facs = [[a2, b2], [a2, -b2]];
+  var keyRaw2 = u3FacRaw("", facs, v);
+  var sqTerm = a2 === 1 ? v + "^2" : (a2 * a2) + v + "^2";
+  var sol = "Each term is a perfect square: \\(" + poly2 + " = (" + a2 + v + ")^2 - " + b2 + "^2\\). Written as a trinomial, this is \\(" + sqTerm + " + 0" + v + " - " + (b2 * b2) + "\\), the case where the middle coefficient is \\(0\\). A factor pair of \\(-" + (b2 * b2) + "\\) that adds to \\(0\\) must consist of opposites, \\(" + b2 + "\\) and \\(-" + b2 + "\\), so the factors differ only in sign." +
+    u3Alg([poly2 + " &= " + keyRaw2]) +
+    "The factored form is **" + u3M(keyRaw2) + "**.";
+  return mcq("Factor the polynomial \\(" + poly2 + "\\).",
+    u3M(keyRaw2), u3FacDistr("", facs, v, prod, 3), sol,
+    { t: "fac", g: "", parts: facs, v: v });
+});
+
+/* ============ 15. perfect-square trinomial, find k (3.12, L2, num) ============ */
+E("u3-perfect-square", 3, ["3.12"], 2, "gen", function () {
+  var v = pick(["x", "y"]);
+  var a = ri(1, 6), b = ri(1, 10), s = pick([1, -1]);
+  var coeffs = [a * a, 2 * a * b * s, b * b];
+  var poly = u3PC(coeffs, v);
+  var facRaw = u3Par([a, s * b], v) + "^2";
+  var prompt = "The trinomial \\(" + poly + "\\) is a perfect-square trinomial. It factors as the square of a binomial, \\((p" + v + " + k)^2\\), for some numbers \\(p\\) and \\(k\\). What is the value of \\(k\\)?";
+  var sol = "The first term is \\((" + a + v + ")^2\\), so \\(p = " + a + "\\). The last term is \\(" + b + "^2\\), and the middle term checks: \\(2 \\times " + a + " \\times " + b + " = " + (2 * a * b) + "\\), with the sign of the middle term giving the sign of \\(k\\)." +
+    u3Alg([poly + " &= " + facRaw]) +
+    "The value of \\(k\\) is **" + (s * b) + "**.";
+  return numq(prompt, s * b, 0.01, sol, { t: "pst", a: a, b: b, s: s });
+});
+
+/* ============ 16. generalize a multiplication strategy (3.6, L3, var) ============ */
+E("u3-strategy", 3, ["3.6"], 3, "var", varset([
+  function () {
+    var key = "Multiply each term of the first binomial by each term of the second binomial, then combine like terms.";
+    return mcq("Which statement correctly generalizes how to multiply two binomials?",
+      key,
+      ["Multiply each term of the first binomial by the matching term of the second binomial, then combine like terms.",
+       "Multiply the first terms together and the last terms together, then add the two products.",
+       "Add each term of the first binomial to each term of the second binomial, then combine like terms."],
+      "Every term of one binomial must meet every term of the other, giving four partial products before like terms are combined; matching terms only, or using only the first and last products, misses the cross products. The correct generalization is **" + key + "**",
+      { t: "stmt", ans: key });
+  },
+  function () {
+    var key = "Six, because each of the 2 terms of the binomial multiplies each of the 3 terms of the trinomial.";
+    return mcq("A student multiplies a binomial by a trinomial. How many partial products are there before like terms are combined?",
+      key,
+      ["Five, because the number of partial products is the sum of the numbers of terms, 2 + 3.",
+       "Six, because the binomial contributes 3 partial products and the trinomial contributes 3 more.",
+       "Nine, because each of the 3 terms of the trinomial multiplies each of the 3 terms of the trinomial."],
+      "Count the pairings: each of the 2 terms of the binomial pairs with each of the 3 terms of the trinomial, giving \\(2 \\times 3 = 6\\) partial products. The correct count is **" + key + "**",
+      { t: "stmt", ans: key });
+  },
+  function () {
+    var key = "FOIL names pairings for two binomials only; the trinomial's third term also has to be multiplied by both terms of the binomial.";
+    return mcq("Why does the FOIL method, on its own, not multiply \\((x + 2)(x^2 + 3x + 4)\\) completely?",
+      key,
+      ["FOIL names pairings for two binomials only; the trinomial must be factored before any multiplication can begin.",
+       "FOIL works only when both factors have positive terms; the trinomial's terms must be rearranged first.",
+       "FOIL gives the outer and inner products twice, so two of the six partial products have to be discarded."],
+      "FOIL is a checklist for the four pairings of two binomials. With a trinomial factor there are six pairings, and the two extra ones involve the third term. The reason is **" + key + "**",
+      { t: "stmt", ans: key });
+  },
+  function () {
+    var key = "Multiply the monomial by every term of the polynomial, then combine any like terms in the result.";
+    return mcq("Which strategy multiplies a monomial by a polynomial of any number of terms?",
+      key,
+      ["Multiply the monomial by the first and last terms of the polynomial, then combine any like terms.",
+       "Multiply the monomial by the term with the highest degree, then add the remaining terms unchanged.",
+       "Add the monomial to every term of the polynomial, then combine any like terms in the result."],
+      "Distribution has no term limit: the monomial multiplies every term of the polynomial, however many there are, and like terms are combined afterwards. The strategy is **" + key + "**",
+      { t: "stmt", ans: key });
+  }
+]));
+
+/* ============ 17. error in a polynomial multiplication (3.7, L3, var) ============ */
+E("u3-mult-error", 3, ["3.7"], 3, "var", varset([
+  function () {
+    var key = "\\(x^2 + 8x + 15\\)";
+    return mcq("A student expands \\((x + 3)(x + 5)\\) as shown. The work contains one error. \\[ (x + 3)(x + 5) = x^2 + 15 \\] What is the correct product?",
+      key,
+      ["\\(x^2 + 15\\)", "\\(x^2 + 5x + 15\\)", "\\(x^2 + 8x + 8\\)"],
+      "The error: only the first and last terms were multiplied, so the two cross products are missing. Correct work:" +
+      u3Alg(["(x + 3)(x + 5) &= x^2 + 5x + 3x + 15", "&= x^2 + 8x + 15"]) +
+      "The correct product is **" + key + "**.",
+      { t: "expand", P: [[1, 1, 0], [3, 0, 0]], Q: [[1, 1, 0], [5, 0, 0]] });
+  },
+  function () {
+    var key = "\\(2x^2 + 9x + 4\\)";
+    return mcq("A student expands \\((2x + 1)(x + 4)\\) as shown. The work contains one error. \\[ (2x + 1)(x + 4) = 2x^2 + 4x + x + 4 = 2x^2 + 5x + 4 \\] What is the correct product?",
+      key,
+      ["\\(2x^2 + 5x + 4\\)", "\\(2x^2 + 9x + 5\\)", "\\(2x^2 + 6x + 4\\)"],
+      "The error is in the outer product: \\(2x \\times 4 = 8x\\), not \\(4x\\). Correct work:" +
+      u3Alg(["(2x + 1)(x + 4) &= 2x^2 + 8x + x + 4", "&= 2x^2 + 9x + 4"]) +
+      "The correct product is **" + key + "**.",
+      { t: "expand", P: [[2, 1, 0], [1, 0, 0]], Q: [[1, 1, 0], [4, 0, 0]] });
+  },
+  function () {
+    var key = "\\(x^2 + 4x - 12\\)";
+    return mcq("A student expands \\((x - 2)(x + 6)\\) as shown. The work contains one error. \\[ (x - 2)(x + 6) = x^2 + 6x - 2x - 12 = x^2 + 4x + 12 \\] What is the correct product?",
+      key,
+      ["\\(x^2 + 4x + 12\\)", "\\(x^2 - 4x - 12\\)", "\\(x^2 + 8x - 12\\)"],
+      "The error is in the last step: the constant term \\(-12\\) changed sign while the \\(x\\) terms were combined. Correct work:" +
+      u3Alg(["(x - 2)(x + 6) &= x^2 + 6x - 2x - 12", "&= x^2 + 4x - 12"]) +
+      "The correct product is **" + key + "**.",
+      { t: "expand", P: [[1, 1, 0], [-2, 0, 0]], Q: [[1, 1, 0], [6, 0, 0]] });
+  },
+  function () {
+    var key = "\\(3x^3 + 6x^2 + 12x\\)";
+    return mcq("A student expands \\(3x(x^2 + 2x + 4)\\) as shown. The work contains one error. \\[ 3x(x^2 + 2x + 4) = 3x^3 + 6x^2 + 4 \\] What is the correct product?",
+      key,
+      ["\\(3x^3 + 6x^2 + 4\\)", "\\(3x^3 + 6x^2 + 12\\)", "\\(3x^3 + 2x^2 + 12x\\)"],
+      "The error: the last term was never multiplied by \\(3x\\); it should become \\(3x \\times 4 = 12x\\). Correct work:" +
+      u3Alg(["3x(x^2 + 2x + 4) &= 3x^3 + 6x^2 + 12x"]) +
+      "The correct product is **" + key + "**.",
+      { t: "expand", P: [[3, 1, 0]], Q: [[1, 2, 0], [2, 1, 0], [4, 0, 0]] });
+  },
+  function () {
+    var key = "\\(x^2 + 8x + 16\\)";
+    return mcq("A student expands \\((x + 4)^2\\) as shown. The work contains one error. \\[ (x + 4)^2 = x^2 + 16 \\] What is the correct product?",
+      key,
+      ["\\(x^2 + 16\\)", "\\(x^2 + 4x + 16\\)", "\\(x^2 + 8x + 8\\)"],
+      "The error: squaring a binomial is not squaring each term separately; the cross term \\(2 \\times x \\times 4 = 8x\\) is missing. Correct work:" +
+      u3Alg(["(x + 4)^2 &= x^2 + 4x + 4x + 16", "&= x^2 + 8x + 16"]) +
+      "The correct product is **" + key + "**.",
+      { t: "expand", P: [[1, 1, 0], [4, 0, 0]], Q: [[1, 1, 0], [4, 0, 0]] });
+  }
+]));
+
+/* ============ 18. error in a polynomial factorization (3.13, L3, var) ============ */
+E("u3-factor-error", 3, ["3.13"], 3, "var", varset([
+  function () {
+    var key = "\\((x + 3)(x + 4)\\)";
+    return mcq("A student factors \\(x^2 + 7x + 12\\) as shown. The work contains one error. \\[ x^2 + 7x + 12 = (x + 6)(x + 2) \\] What is the correct factorization?",
+      key,
+      ["\\((x + 6)(x + 2)\\)", "\\((x + 1)(x + 12)\\)", "\\((x + 2)(x + 5)\\)"],
+      "The error: \\(6\\) and \\(2\\) multiply to \\(12\\) but add to \\(8\\), not \\(7\\). The pair that multiplies to \\(12\\) and adds to \\(7\\) is \\(3\\) and \\(4\\)." +
+      u3Alg(["x^2 + 7x + 12 &= (x + 3)(x + 4)"]) +
+      "The correct factorization is **" + key + "**.",
+      { t: "fac", g: "", parts: [[1, 3], [1, 4]], v: "x" });
+  },
+  function () {
+    var key = "\\((x - 2)(x - 3)\\)";
+    return mcq("A student factors \\(x^2 - 5x + 6\\) as shown. The work contains one error. \\[ x^2 - 5x + 6 = (x - 1)(x - 6) \\] What is the correct factorization?",
+      key,
+      ["\\((x - 1)(x - 6)\\)", "\\((x + 2)(x + 3)\\)", "\\((x - 1)(x - 5)\\)"],
+      "The error: \\(-1\\) and \\(-6\\) multiply to \\(6\\) but add to \\(-7\\), not \\(-5\\). The pair that multiplies to \\(6\\) and adds to \\(-5\\) is \\(-2\\) and \\(-3\\)." +
+      u3Alg(["x^2 - 5x + 6 &= (x - 2)(x - 3)"]) +
+      "The correct factorization is **" + key + "**.",
+      { t: "fac", g: "", parts: [[1, -2], [1, -3]], v: "x" });
+  },
+  function () {
+    var key = "\\((2x + 1)(x + 3)\\)";
+    return mcq("A student factors \\(2x^2 + 7x + 3\\) as shown. The work contains one error. \\[ 2x^2 + 7x + 3 = (2x + 3)(x + 1) \\] What is the correct factorization?",
+      key,
+      ["\\((2x + 3)(x + 1)\\)", "\\((2x + 3)(x + 3)\\)", "\\((2x + 1)(x + 1)\\)"],
+      "The error: the student's factors expand to \\(2x^2 + 5x + 3\\); the cross sum is \\(2 \\times 1 + 3 \\times 1 = 5\\), not \\(7\\). Swapping the constants gives a cross sum of \\(2 \\times 3 + 1 \\times 1 = 7\\)." +
+      u3Alg(["2x^2 + 7x + 3 &= (2x + 1)(x + 3)"]) +
+      "The correct factorization is **" + key + "**.",
+      { t: "fac", g: "", parts: [[2, 1], [1, 3]], v: "x" });
+  },
+  function () {
+    var key = "\\((x + 4)(x - 4)\\)";
+    return mcq("A student factors \\(x^2 - 16\\) as shown. The work contains one error. \\[ x^2 - 16 = (x - 4)(x - 4) \\] What is the correct factorization?",
+      key,
+      ["\\((x - 4)(x - 4)\\)", "\\((x + 4)(x + 4)\\)", "\\((x - 2)(x - 8)\\)"],
+      "The error: \\((x - 4)(x - 4)\\) expands to \\(x^2 - 8x + 16\\), which has an \\(x\\) term. A difference of squares needs one factor with \\(+4\\) and one with \\(-4\\), so the \\(x\\) terms cancel." +
+      u3Alg(["x^2 - 16 &= (x + 4)(x - 4)"]) +
+      "The correct factorization is **" + key + "**.",
+      { t: "fac", g: "", parts: [[1, 4], [1, -4]], v: "x" });
+  },
+  function () {
+    var key = "\\(4x(x + 2)\\)";
+    return mcq("A student factors \\(4x^2 + 8x\\) as shown. The work contains one error. \\[ 4x^2 + 8x = 4x(x + 8) \\] What is the correct factorization?",
+      key,
+      ["\\(4x(x + 8)\\)", "\\(4(x^2 + 8x)\\)", "\\(2x(2x + 8)\\)"],
+      "The error: the second term inside the brackets was not divided by the common factor; \\(8x \\div 4x = 2\\), not \\(8\\)." +
+      u3Alg(["4x^2 + 8x &= 4x(x + 2)"]) +
+      "The correct factorization is **" + key + "**.",
+      { t: "fac", g: "4x", parts: [[1, 2]], v: "x" });
+  }
+]));
+/* CR_MARKS: constructed-response marks for the print exam's Section B.
+   An entry earns marks only if the question still works with the choices
+   removed; statement pickers stay untagged (SR only). Reconciled from the
+   tranche 1 authoring reports, November 6, 2026. */
+var CR_MARKS={
+ "u1-convert-multistep": 2,
+ "u1-sa-basic": 3,
+ "u1-sa-unknown": 2,
+ "u1-vol-basic": 2,
+ "u1-vol-unknown": 2,
+ "u1-sphere": 3,
+ "u1-composite": 3,
+ "u1-composite-sa": 2,
+ "u2-gcf-lcm": 2,
+ "u2-gcf-lcm-problem": 3,
+ "u2-radical-mixed": 2,
+ "u2-laws-integral": 3,
+ "u2-laws-rational": 2,
+ "u2-evaluate-exp": 2,
+ "u2-error": 2,
+ "u2-problem": 3,
+ "u3-binomial-expand": 2,
+ "u3-binom-tri-expand": 3,
+ "u3-special-products": 2,
+ "u3-verify-sub": 1,
+ "u3-gcf": 2,
+ "u3-factor-monic": 2,
+ "u3-factor-hard": 3,
+ "u3-factor-product": 2,
+ "u3-factor-gcf-first": 2,
+ "u3-diff-squares": 2,
+ "u3-mult-error": 2,
+ "u3-factor-error": 3
+};
 /* BANK-SRC-END */
 </script>
 
