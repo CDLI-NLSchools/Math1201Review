@@ -796,6 +796,29 @@ function u1r1(n){return Math.round(n*10)/10;}
 function u1r2(n){return Math.round(n*100)/100;}
 function u1setOk(a){return (new Set(a.map(function(x){return String(x);})).size===a.length);}
 
+/* Rule 7 (balanced precision, pairs criterion, Nov 8 2026): pad distractor
+   strings with trailing zeros so no option stands alone at a unique number
+   of decimal places. The correct option's string is never changed, no value
+   changes, and no randomness is consumed. Applies only when every option is
+   a bare number string; otherwise the set is returned unchanged. */
+function balDp(keyStr,ds){
+  function dpOf(s){var m=/^-?\d+(?:\.(\d+))?$/.exec(s);if(!m)return null;return m[1]?m[1].length:0;}
+  function padTo(s,dp){var cur=dpOf(s);if(cur===null||dp<=cur)return s;if(s.indexOf(".")<0)return s+"."+Array(dp+1).join("0");return s+Array(dp-cur+1).join("0");}
+  var all=[keyStr].concat(ds),dps=all.map(dpOf);
+  if(dps.some(function(d){return d===null;}))return ds;
+  function ok(list){var c={};list.forEach(function(d){c[d]=(c[d]||0)+1;});return Object.keys(c).every(function(k){return c[k]!==1;});}
+  if(ok(dps))return ds;
+  var cap=Math.max.apply(null,dps)+2,best=null,bestCost=1e9;
+  for(var a=dps[1];a<=cap;a++)for(var b=dps[2];b<=cap;b++)for(var c2=dps[3];c2<=cap;c2++){
+    var cand=[dps[0],a,b,c2];
+    if(!ok(cand))continue;
+    var cost=(a-dps[1])+(b-dps[2])+(c2-dps[3]);
+    if(cost<bestCost){bestCost=cost;best=[a,b,c2];}
+  }
+  if(!best)return ds;
+  return ds.map(function(s,i){return padTo(s,best[i]);});
+}
+
 /* 1. Convert within one system */
 E("u1-convert-si",1,["6.1"],1,"gen",function(){
   var modes=[
@@ -820,7 +843,7 @@ E("u1-convert-si",1,["6.1"],1,"gen",function(){
   }while(!u1setOk([fmt(ans)].concat(ds))&&tries<80);
   var sol="Use the fact that "+m.note+". Multiply or divide by the conversion factor: \\[ "+fmt(v)+" \\times "+fmt(m.f)+" = "+fmt(ans)+" \\] So the measure is <b>"+fmt(ans)+" "+m.to+"</b>.";
   if(m.f<1)sol="Use the fact that "+m.note+". Divide by the number of smaller units in one larger unit: \\[ "+fmt(v)+" \\times "+fmt(m.f)+" = "+fmt(ans)+" \\] So the measure is <b>"+fmt(ans)+" "+m.to+"</b>.";
-  return mcq("Convert "+fmt(v)+" "+m.from+" to "+m.to+".",fmt(ans),ds,sol,{mode:m.from+"-"+m.to,v:v});
+  return mcq("Convert "+fmt(v)+" "+m.from+" to "+m.to+".",fmt(ans),balDp(fmt(ans),ds),sol,{mode:m.from+"-"+m.to,v:v});
 });
 
 /* 2. Convert between systems, multiple choice with numeric options */
@@ -855,7 +878,7 @@ E("u1-convert-between",1,["6.1","6.2"],2,"gen",function(){
       sol="Divide by the conversion factor, since centimetres are the smaller unit here: \\[ \\begin{aligned} "+fmt(v)+" \\div 2.54 &= "+fmt(ans)+" \\end{aligned} \\] So the photograph is <b>"+fmt(ans)+" inches</b> wide.";
     }
   }while(!u1setOk([fmt(ans)].concat(ds))&&tries<80);
-  return mcq(prompt,fmt(ans),ds,sol,{mode:mode,v:v});
+  return mcq(prompt,fmt(ans),balDp(fmt(ans),ds),sol,{mode:mode,v:v});
 });
 
 /* 3. Multistep conversions, numeric answer */
@@ -1093,7 +1116,7 @@ E("u1-linear-problem",1,["5.14"],2,"gen",function(){
       sol="Multiply the length of one roll by the number of rolls: \\[ \\begin{aligned} "+v1+" \\times "+v2+" &= "+ans+" \\end{aligned} \\] So the total length is <b>"+ans+" centimetres</b>.";
     }
   }while(!u1setOk([fmt(ans)].concat(ds.map(function(x){return String(x);})))&&tries<80);
-  return mcq(prompt,fmt(ans),ds,sol,{mode:mode,v1:v1,v2:v2});
+  return mcq(prompt,fmt(ans),balDp(fmt(ans),ds),sol,{mode:mode,v1:v1,v2:v2});
 });
 
 /* 10. Personal strategy for a hard-to-measure length */
@@ -1234,7 +1257,7 @@ E("u1-vol-relation",1,["5.5"],1,"gen",function(){
     prompt="A right pyramid has volume "+small+" cubic centimetres. A right prism has the same base and the same height as the pyramid. Determine the volume of the prism, in cubic centimetres.";
     sol="A prism holds three times the volume of a pyramid with the same base and height: \\[ \\begin{aligned} V &= 3 \\times "+small+" \\\\ &= "+big+" \\end{aligned} \\] So the prism volume is <b>"+big+" cubic centimetres</b>.";
   }
-  return mcq(prompt,fmt(ans),ds,sol,{mode:mode,small:small});
+  return mcq(prompt,fmt(ans),balDp(fmt(ans),ds),sol,{mode:mode,small:small});
 });
 
 /* 15. Unknown dimension from a volume */
@@ -1334,34 +1357,34 @@ E("u1-composite",1,["5.9"],3,"gen",function(){
 /* 18. Read an instrument scale */
 E("u1-read-instrument",1,["5.14"],1,"var",varset([
   function(){return mcq("On a centimetre ruler, the end of a ribbon lines up with the third millimetre tick after the 7 centimetre mark. Determine the length of the ribbon, in centimetres.",
-    "7.3",["7","7.03","10"],
+    "7.3",["7.0","7.03","10.00"],
     "Each millimetre tick is 0.1 cm, so three ticks past 7 cm add 0.3 cm: \\[ 7 + 0.3 = 7.3 \\] The length is <b>7.3 centimetres</b>.",{});},
   function(){return mcq("A caliper scale reads 24 millimetres for the diameter of a bolt. Which reading, in centimetres, matches the caliper?",
-    "2.4",["0.24","24","240"],
+    "2.4",["0.24","24.0","240.00"],
     "Divide millimetres by 10 to get centimetres: \\[ 24 \\div 10 = 2.4 \\] The matching reading is <b>2.4 centimetres</b>.",{});},
   function(){return mcq("On a tape measure, a board ends at the 1 metre mark plus 24 centimetres more. Determine the length of the board, in centimetres.",
     "124",["24","100","125"],
     "Change the metre to centimetres and add: \\[ 100 + 24 = 124 \\] The length is <b>124 centimetres</b>.",{});},
   function(){return mcq("On an inch ruler divided into quarter inches, the end of a card lines up with the second quarter tick after the 3 inch mark. Determine the length of the card, in inches.",
-    "3.5",["3.25","3.75","5"],
+    "3.5",["3.25","3.75","5.0"],
     "Two quarter ticks make one half inch past the 3 inch mark: \\[ 3 + 0.5 = 3.5 \\] The length is <b>3.5 inches</b>.",{});},
   function(){return mcq("A length is given as 68 millimetres. Which caliper reading, in centimetres, shows the same length?",
-    "6.8",["0.68","68","680"],
+    "6.8",["0.68","68.0","680.00"],
     "Divide millimetres by 10 to get centimetres: \\[ 68 \\div 10 = 6.8 \\] The matching reading is <b>6.8 centimetres</b>.",{});},
   function(){return mcq("On a metre stick, the end of a cord lines up with the 47 centimetre mark. Determine the length of the cord, in metres.",
-    "0.47",["0.047","4.7","47"],
+    "0.47",["0.047","4.70","47.000"],
     "Divide centimetres by 100 to get metres: \\[ 47 \\div 100 = 0.47 \\] The length is <b>0.47 metres</b>.",{});},
   function(){return mcq("A caliper scale reads 12.5 millimetres for the thickness of a washer. Determine the thickness, in millimetres.",
-    "12.5",["1.25","12","125"],
+    "12.5",["1.25","12.0","125.00"],
     "The scale already reads in millimetres, so the reading is taken directly. The thickness is <b>12.5 millimetres</b>.",{});},
   function(){return mcq("A strip of paper starts at the 2 centimetre mark of a ruler and ends at the 9 centimetre mark. Determine the length of the strip, in centimetres.",
     "7",["9","11","18"],
     "Subtract the starting mark from the ending mark, since the strip does not start at zero: \\[ 9 - 2 = 7 \\] The length is <b>7 centimetres</b>.",{});},
   function(){return mcq("A ribbon starts at the 1 inch mark of a ruler and ends at the 4.5 inch mark. Determine the length of the ribbon, in inches.",
-    "3.5",["4.5","5","5.5"],
+    "3.5",["4.5","5.0","5.5"],
     "Subtract the starting mark from the ending mark, since the ribbon does not start at zero: \\[ 4.5 - 1 = 3.5 \\] The length is <b>3.5 inches</b>.",{});},
   function(){return mcq("On a centimetre ruler, a screw lines up from the 0 mark to the sixth millimetre tick after the 4 centimetre mark. Determine the length of the screw, in centimetres.",
-    "4.6",["4.06","5","10"],
+    "4.6",["4.06","5.0","10.00"],
     "Each millimetre tick is 0.1 cm, so six ticks past 4 cm add 0.6 cm: \\[ 4 + 0.6 = 4.6 \\] The length is <b>4.6 centimetres</b>.",{});}
 ]));
 
@@ -2388,8 +2411,8 @@ E("u3-mult-factor-rel", 3, ["3.8"], 1, "var", varset([
     return mcq("Which statement best describes the relationship between multiplying polynomials and factoring polynomials?",
       key,
       ["Factoring is the reverse of multiplying: the factors of a polynomial add together to give the polynomial.",
-       "Multiplying is the reverse of factoring: the terms of a product multiply together to give each factor.",
-       "Multiplying and factoring are the same process: both rewrite a polynomial as a sum of its terms."],
+       "Multiplying is the reverse of factoring: the terms of a product multiply together to give each separate factor.",
+       "Multiplying and factoring are the same process: both rewrite a polynomial as a sum of its individual terms."],
       "Multiplying builds a product from factors, and factoring undoes that step by splitting a polynomial back into the expressions that multiply to give it. The statement that says this is **" + key + "**",
       { t: "stmt", ans: key });
   },
@@ -2418,8 +2441,8 @@ E("u3-mult-factor-rel", 3, ["3.8"], 1, "var", varset([
     return mcq("A polynomial is factored correctly. Why does expanding the factored form always return the original polynomial?",
       key,
       ["Because factoring rewrites the polynomial as a sum, and expanding a sum reverses that rewriting exactly.",
-       "Because each factor has the same degree as the polynomial, so expanding restores every original term.",
-       "Because expanding removes the common factor from each term, which returns the terms to their places."],
+       "Because each factor has the same degree as the polynomial, so expanding restores every original term in its place.",
+       "Because expanding removes the common factor from each term of the polynomial, which returns the terms to their places."],
       "A factored form is a product of expressions that together equal the polynomial, so multiplying them back out must reproduce the polynomial exactly. The reason is **" + key + "**",
       { t: "stmt", ans: key });
   }
@@ -2801,7 +2824,7 @@ E("u3-strategy", 3, ["3.6"], 3, "var", varset([
     return mcq("Which statement correctly generalizes how to multiply two binomials?",
       key,
       ["Multiply each term of the first binomial by the matching term of the second binomial, then combine like terms.",
-       "Multiply the first terms together and the last terms together, then add the two products.",
+       "Multiply the first terms together and the last terms together, then add the two products together.",
        "Add each term of the first binomial to each term of the second binomial, then combine like terms."],
       "Every term of one binomial must meet every term of the other, giving four partial products before like terms are combined; matching terms only, or using only the first and last products, misses the cross products. The correct generalization is **" + key + "**",
       { t: "stmt", ans: key });
@@ -2810,7 +2833,7 @@ E("u3-strategy", 3, ["3.6"], 3, "var", varset([
     var key = "Six, because each of the 2 terms of the binomial multiplies each of the 3 terms of the trinomial.";
     return mcq("A student multiplies a binomial by a trinomial. How many partial products are there before like terms are combined?",
       key,
-      ["Five, because the number of partial products is the sum of the numbers of terms, 2 + 3.",
+      ["Five, because the number of partial products is the sum of the numbers of terms in the factors, 2 + 3.",
        "Six, because the binomial contributes 3 partial products and the trinomial contributes 3 more.",
        "Nine, because each of the 3 terms of the trinomial multiplies each of the 3 terms of the trinomial."],
       "Count the pairings: each of the 2 terms of the binomial pairs with each of the 3 terms of the trinomial, giving \\(2 \\times 3 = 6\\) partial products. The correct count is **" + key + "**",
@@ -2820,9 +2843,9 @@ E("u3-strategy", 3, ["3.6"], 3, "var", varset([
     var key = "FOIL names pairings for two binomials only; the trinomial's third term also has to be multiplied by both terms of the binomial.";
     return mcq("Why does the FOIL method, on its own, not multiply \\((x + 2)(x^2 + 3x + 4)\\) completely?",
       key,
-      ["FOIL names pairings for two binomials only; the trinomial must be factored before any multiplication can begin.",
-       "FOIL works only when both factors have positive terms; the trinomial's terms must be rearranged first.",
-       "FOIL gives the outer and inner products twice, so two of the six partial products have to be discarded."],
+      ["FOIL names pairings for two binomials only; the trinomial must be factored into binomials before any multiplication can begin.",
+       "FOIL works only when both factors have positive terms; the trinomial's terms must be rearranged into the right order first.",
+       "FOIL gives the outer and inner products twice, so two of the six partial products have to be discarded at the end of the work."],
       "FOIL is a checklist for the four pairings of two binomials. With a trinomial factor there are six pairings, and the two extra ones involve the third term. The reason is **" + key + "**",
       { t: "stmt", ans: key });
   },
@@ -5177,7 +5200,7 @@ E("u7-pythagoras",7,["7.5","7.7"],2,"gen",function(){
   var seenD={},ds=[];
   cands.forEach(function(c){if(ds.length<3&&typeof c==="number"&&isFinite(c)&&c>0&&c!==ans&&!seenD[c]){seenD[c]=1;ds.push(""+c);}});
   var pad=1;while(ds.length<3){var cc=ans+pad+2;pad++;if(!seenD[cc]){seenD[cc]=1;ds.push(""+cc);}}
-  return mcq(prompt,""+ans,ds,
+  return mcq(prompt,""+ans,balDp(""+ans,ds),
     "The situation forms a right triangle, so the Pythagorean theorem applies. Let \\(x\\) be the length asked for: \\[ "+solSteps+" \\] The length is <b>\\("+ans+"\\) m</b>.",
     {kind:kind,x:known1,y:known2,ans:ans});
 });
