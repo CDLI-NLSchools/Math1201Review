@@ -1806,7 +1806,7 @@ E("u2-negative-exp",2,["1.5"],1,"gen",function(){
 });
 
 /* ================= 11. why a^(m/n) is a root then a power (1.2, L2, var) ================= */
-E("u2-rational-pattern",2,["1.2"],2,"var",varset([
+E("u2-rational-pattern",2,["1.2"],1,"var",varset([
   function(){var key="The denominator \\(3\\) names the root and the numerator \\(2\\) names the power: \\(\\left(\\sqrt[3]{8}\\right)^2 = 2^2 = 4\\)";
     return mcq("Which explanation correctly shows why \\(8^{"+FR(2,3)+"}\\) equals \\(4\\)?",
     key,
@@ -2795,7 +2795,7 @@ E("u3-factor-gcf-first", 3, ["3.9", "3.10"], 2, "gen", function () {
 });
 
 /* ============ 14. difference of squares (3.14, L2) ============ */
-E("u3-diff-squares", 3, ["3.14"], 2, "gen", function () {
+E("u3-diff-squares", 3, ["3.14"], 1, "gen", function () {
   var mode = pick(["pure", "pure", "twovar"]);
   if (mode === "twovar") {
     var a = ri(1, 4), b = ri(1, 6);
@@ -2834,7 +2834,7 @@ E("u3-diff-squares", 3, ["3.14"], 2, "gen", function () {
 });
 
 /* ============ 15. perfect-square trinomial, find k (3.12, L2, num) ============ */
-E("u3-perfect-square", 3, ["3.12"], 2, "gen", function () {
+E("u3-perfect-square", 3, ["3.12"], 1, "gen", function () {
   var v = pick(["x", "y"]);
   var a = ri(1, 6), b = ri(1, 10), s = pick([1, -1]);
   var coeffs = [a * a, 2 * a * b * s, b * b];
@@ -3028,7 +3028,7 @@ function u4pairsS(pairs){return "\\{"+pairs.map(function(p){return u4pairS(p[0],
 function u4interval(v,lo,hi){return "\\("+lo+" \\le "+v+" \\le "+hi+"\\)";}
 
 /* ================= 1. situation for a described graph (4.1, L2, var) ================= */
-E("u4-situation-graph",4,["4.1"],2,"var",varset([
+E("u4-situation-graph",4,["4.1"],1,"var",varset([
   function(){var key="The greenhouse warms through the morning, holds its temperature at midday, then cools later on in the day";
     return mcq("A graph has time in hours on the horizontal axis and the temperature of a greenhouse on the vertical axis. The graph rises steadily, then stays level, then falls steadily. Which situation could this graph represent?",
     key,
@@ -3080,7 +3080,7 @@ E("u4-situation-graph",4,["4.1"],2,"var",varset([
 ]));
 
 /* ================= 2. graph that fits a situation (4.2, L2, var) ================= */
-E("u4-sketch-situation",4,["4.2"],2,"var",varset([
+E("u4-sketch-situation",4,["4.2"],1,"var",varset([
   function(){var key="The graph rises steadily, stays level for a while, rises steadily again, then stays level until the trip ends";
     return mcq("A school bus leaves its depot, drives steadily to a first stop, waits, drives steadily to a second stop, then waits there. A graph plots the distance from the depot against time. Which description matches a graph for this trip?",
     key,
@@ -4150,7 +4150,7 @@ E("u5-draw-line",5,["4.24"],1,"gen",function(){
 });
 
 /* ================= 8. another point on a line (4.25, L2, mcq) ================= */
-E("u5-another-point",5,["4.25"],2,"gen",function(){
+E("u5-another-point",5,["4.25"],1,"gen",function(){
   var sl=u5slopes().filter(function(s){return Math.abs(s[0])!==s[1];});
   var s=pick(sl),mN=s[0],mD=s[1];
   var x=ri(-6,6),y=ri(-5,9),st=pick([1,2]);
@@ -4737,7 +4737,7 @@ E("u6-solve-algebra",6,["4.55"],2,"gen",function(){
 });
 
 /* ================= 7. choose a solving strategy (4.56, L2, var mcq) ================= */
-E("u6-strategy",6,["4.56"],2,"var",varset([
+E("u6-strategy",6,["4.56"],1,"var",varset([
   function(){var key="Use substitution, because the first equation already gives y directly in terms of x, so it drops right into the second equation";
     return mcq("A system begins with the equation \\(y = 3x - 2\\), followed by \\(2x + 5y = 31\\). Which strategy fits this system best, and why?",
     key,
@@ -5021,7 +5021,7 @@ E("u7-label-sides",7,["7.1"],1,"gen",function(){
 });
 
 /* ================= 2. ratios and similar triangles (7.2, L2, var mcq) ================= */
-E("u7-ratio-similar",7,["7.2"],2,"var",varset([
+E("u7-ratio-similar",7,["7.2"],1,"var",varset([
   function(){var key="The triangles are similar, so matching sides stay in proportion, and the opposite side divided by the hypotenuse is the same in both";
     return mcq("Two right triangles each have an acute angle of \\(38^\\circ\\). One triangle is an enlargement of the other. Why is \\(\\sin 38^\\circ\\) the same for both triangles?",
     key,
@@ -5400,7 +5400,7 @@ E("u7-elevation-decision",7,["7.5","7.7"],3,"gen",function(){
 });
 
 /* ================= 12. choose the ratio setup (7.3, 7.4, L2, gen mcq) ================= */
-E("u7-choose-ratio",7,["7.3","7.4"],2,"gen",function(){
+E("u7-choose-ratio",7,["7.3","7.4"],1,"gen",function(){
   var V=pick(["A","B"]);
   var oppName=(V==="A"?"BC":"AC"),adjName=(V==="A"?"AC":"BC");
   var theta=pick(U7_ANGLES),mode=ri(1,6);
